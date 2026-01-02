@@ -77,6 +77,18 @@
             margin-bottom: 1rem;
             text-align: center;
         }
+        .warning {
+            background: #fff3e0;
+            color: #e65100;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .warning a {
+            color: #e65100;
+            font-weight: bold;
+        }
         .link {
             text-align: center;
             margin-top: 1.5rem;
@@ -104,6 +116,20 @@
         
         {% if error %}
         <div class="error">{{ error }}</div>
+        {% endif %}
+        
+        {% if success %}
+        <div class="warning" style="background: #e0ffe0; color: #080;">{{ success }}</div>
+        {% endif %}
+        
+        {% if needs_verification %}
+        <div class="warning">
+            <p>📧 Need a new verification email?</p>
+            <form method="POST" action="/resend-verification" style="margin-top: 0.5rem;">
+                <input type="hidden" name="email" value="{{ user_email }}">
+                <button type="submit" class="btn" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Resend Verification Email</button>
+            </form>
+        </div>
         {% endif %}
         
         <form method="POST">

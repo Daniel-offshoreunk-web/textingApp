@@ -26,6 +26,11 @@ app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', os.environ.get('MAIL_USERNAME'))
 mail = Mail(app)
 
+# Log email config status (not the actual values for security)
+print(f"Email config: SERVER={app.config['MAIL_SERVER']}, PORT={app.config['MAIL_PORT']}")
+print(f"Email config: USERNAME={'set' if app.config['MAIL_USERNAME'] else 'NOT SET'}")
+print(f"Email config: PASSWORD={'set' if app.config['MAIL_PASSWORD'] else 'NOT SET'}")
+
 # Production settings
 IS_PRODUCTION = os.environ.get('RENDER') == 'true'
 if IS_PRODUCTION:
@@ -85,8 +90,17 @@ def index():
 # Helper function to send verification email
 def send_verification_email(email, token, display_name):
     try:
+        # Check if email is configured
+        if not app.config['MAIL_USERNAME'] or not app.config['MAIL_PASSWORD']:
+            print("ERROR: Email credentials not configured!")
+            print(f"MAIL_USERNAME: {'set' if app.config['MAIL_USERNAME'] else 'NOT SET'}")
+            print(f"MAIL_PASSWORD: {'set' if app.config['MAIL_PASSWORD'] else 'NOT SET'}")
+            return False
+            
         base_url = os.environ.get('BASE_URL', 'https://textingapp.onrender.com')
         verify_link = f"{base_url}/verify/{token}"
+        
+        print(f"Sending verification email to {email}...")
         
         msg = Message(
             'Verify your TextingApp account',
@@ -267,6 +281,41 @@ def resend_verification():
     else:
         return jsonify({'success': False, 'error': 'Failed to send email. Please try again later.'})
 
+# Form-based resend verification (for regular templates)
+@app.route('/resend-verification', methods=['POST'])
+def resend_verification_form():
+    email = request.form.get('email', '').strip().lower()
+    
+    if not email:
+        return render_template('login.html', error='Email is required to resend verification')
+    
+    user = users.find_one({'email': email})
+    
+    if not user:
+        return render_template('login.html', error='No account found with this email')
+    
+    if user.get('email_verified'):
+        return render_template('login.html', error='Email is already verified. You can log in.')
+    
+    # Generate new token
+    verification_token = secrets.token_urlsafe(32)
+    token_expires = datetime.now(UTC) + timedelta(hours=24)
+    
+    users.update_one(
+        {'_id': user['_id']},
+        {
+            '$set': {
+                'verification_token': verification_token,
+                'verification_token_expires': token_expires
+            }
+        }
+    )
+    
+    if send_verification_email(email, verification_token, user['display_name']):
+        return render_template('login.html', success='Verification email sent! Check your inbox.')
+    else:
+        return render_template('login.html', error='Failed to send email. Please try again later.')
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -332,7 +381,10 @@ def login():
         if user and bcrypt.check_password_hash(user['password'], password):
             # Check if email is verified
             if not user.get('email_verified', False):
-                return render_template('login.html', error='Please verify your email before logging in. Check your inbox.')
+                return render_template('login.html', 
+                    needs_verification=True,
+                    user_email=user.get('email', ''),
+                    error='Please verify your email before logging in. Check your inbox.')
             
             session['user_id'] = str(user['_id'])
             session['username'] = user['username']
