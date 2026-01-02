@@ -100,6 +100,15 @@
             text-align: center;
             display: none;
         }
+        .success-msg {
+            background: #e0ffe0;
+            color: #080;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            text-align: center;
+            display: none;
+        }
         .link {
             text-align: center;
             margin-top: 1.5rem;
@@ -355,6 +364,11 @@
             <div class="auth-box">
                 <h1>💬 Log In</h1>
                 <div id="loginError" class="error-msg"></div>
+                <div id="verificationNeeded" class="error-msg" style="display:none;">
+                    Please verify your email before logging in.
+                    <br><br>
+                    <button class="btn btn-secondary" onclick="resendVerification()" style="padding:0.5rem 1rem;">Resend verification email</button>
+                </div>
                 <form id="loginForm">
                     <div class="form-group">
                         <label>Username</label>
@@ -378,7 +392,13 @@
             <div class="auth-box">
                 <h1>💬 Create Account</h1>
                 <div id="registerError" class="error-msg"></div>
+                <div id="registerSuccess" class="success-msg"></div>
                 <form id="registerForm">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="registerEmail" required>
+                        <p class="hint">We'll send a verification link to this email</p>
+                    </div>
                     <div class="form-group">
                         <label>Username</label>
                         <input type="text" id="registerUsername" required pattern="[a-zA-Z0-9_]{3,20}">
@@ -458,11 +478,17 @@
             if (pageId === 'chatPage') page.classList.add('flex');
         }
 
+        // Store email for resend verification
+        let pendingVerificationEmail = null;
+
         // Login
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('loginUsername').value.trim().toLowerCase();
             const password = document.getElementById('loginPassword').value;
+            
+            document.getElementById('verificationNeeded').style.display = 'none';
+            document.getElementById('loginError').style.display = 'none';
             
             try {
                 const res = await fetch(`${API_BASE}/api/auth/login`, {
@@ -477,6 +503,9 @@
                     currentUser = data.user;
                     localStorage.setItem('user', JSON.stringify(currentUser));
                     initChat();
+                } else if (data.needs_verification) {
+                    pendingVerificationEmail = data.email;
+                    document.getElementById('verificationNeeded').style.display = 'block';
                 } else {
                     showError('loginError', data.error || 'Invalid credentials');
                 }
@@ -485,26 +514,65 @@
             }
         });
 
+        // Resend verification email
+        async function resendVerification() {
+            if (!pendingVerificationEmail) {
+                showError('loginError', 'Please try logging in first');
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/auth/resend-verification`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ email: pendingVerificationEmail })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    alert('Verification email sent! Please check your inbox.');
+                } else {
+                    showError('loginError', data.error || 'Failed to resend email');
+                }
+            } catch (err) {
+                showError('loginError', 'Connection error. Please try again.');
+            }
+        }
+
         // Register
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const email = document.getElementById('registerEmail').value.trim().toLowerCase();
             const username = document.getElementById('registerUsername').value.trim().toLowerCase();
             const display_name = document.getElementById('registerDisplayName').value.trim();
             const password = document.getElementById('registerPassword').value;
+            
+            document.getElementById('registerError').style.display = 'none';
+            document.getElementById('registerSuccess').style.display = 'none';
             
             try {
                 const res = await fetch(`${API_BASE}/api/auth/register`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({ username, display_name, password })
+                    body: JSON.stringify({ email, username, display_name, password })
                 });
                 const data = await res.json();
                 
                 if (data.success) {
-                    currentUser = data.user;
-                    localStorage.setItem('user', JSON.stringify(currentUser));
-                    initChat();
+                    if (data.needs_verification) {
+                        // Show success message, don't auto-login
+                        const successEl = document.getElementById('registerSuccess');
+                        successEl.textContent = data.message || 'Account created! Please check your email to verify your account.';
+                        successEl.style.display = 'block';
+                        document.getElementById('registerForm').reset();
+                    } else {
+                        // Legacy: if verification not required
+                        currentUser = data.user;
+                        localStorage.setItem('user', JSON.stringify(currentUser));
+                        initChat();
+                    }
                 } else {
                     showError('registerError', data.error || 'Registration failed');
                 }

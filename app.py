@@ -2,18 +2,29 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 from flask_socketio import SocketIO, emit, join_room
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
+from flask_mail import Mail, Message
 from pymongo import MongoClient
 from bson import ObjectId
-from datetime import datetime, UTC
+from datetime import datetime, timedelta, UTC
 from urllib.parse import quote_plus
 import os
 import sys
+import secrets
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
 # Enable CORS for all domains (needed for Google Sites iframe)
 CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
+
+# Email configuration (set these in Render environment variables)
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', os.environ.get('MAIL_USERNAME'))
+mail = Mail(app)
 
 # Production settings
 IS_PRODUCTION = os.environ.get('RENDER') == 'true'
@@ -71,6 +82,41 @@ def index():
         return redirect(url_for('chat'))
     return render_template('index.html')
 
+# Helper function to send verification email
+def send_verification_email(email, token, display_name):
+    try:
+        base_url = os.environ.get('BASE_URL', 'https://textingapp.onrender.com')
+        verify_link = f"{base_url}/verify/{token}"
+        
+        msg = Message(
+            'Verify your TextingApp account',
+            recipients=[email]
+        )
+        msg.body = f"""Hi {display_name},
+
+Welcome to TextingApp! Please verify your email by clicking the link below:
+
+{verify_link}
+
+This link expires in 24 hours.
+
+If you didn't create this account, you can ignore this email.
+"""
+        msg.html = f"""
+<h2>Welcome to TextingApp!</h2>
+<p>Hi {display_name},</p>
+<p>Please verify your email by clicking the button below:</p>
+<p><a href="{verify_link}" style="background-color: #4CAF50; color: white; padding: 14px 20px; text-decoration: none; border-radius: 4px;">Verify Email</a></p>
+<p>Or copy this link: {verify_link}</p>
+<p>This link expires in 24 hours.</p>
+<p>If you didn't create this account, you can ignore this email.</p>
+"""
+        mail.send(msg)
+        return True
+    except Exception as e:
+        print(f"Failed to send verification email: {e}")
+        return False
+
 # JSON API Auth endpoints for standalone HTML
 @app.route('/api/auth/register', methods=['POST'])
 def api_register():
@@ -78,9 +124,10 @@ def api_register():
     username = data.get('username', '').strip().lower()
     password = data.get('password', '')
     display_name = data.get('display_name', '').strip()
+    email = data.get('email', '').strip().lower()
     
-    if not username or not password:
-        return jsonify({'success': False, 'error': 'Username and password are required'})
+    if not username or not password or not email:
+        return jsonify({'success': False, 'error': 'Username, email, and password are required'})
     
     if len(username) < 3:
         return jsonify({'success': False, 'error': 'Username must be at least 3 characters'})
@@ -88,27 +135,49 @@ def api_register():
     if len(password) < 6:
         return jsonify({'success': False, 'error': 'Password must be at least 6 characters'})
     
+    # Basic email validation
+    if '@' not in email or '.' not in email:
+        return jsonify({'success': False, 'error': 'Please enter a valid email address'})
+    
+    # Check if email already exists
+    if users.find_one({'email': email}):
+        return jsonify({'success': False, 'error': 'An account with this email already exists'})
+    
     if users.find_one({'username': username}):
         return jsonify({'success': False, 'error': 'Username already taken'})
+    
+    # Generate verification token
+    verification_token = secrets.token_urlsafe(32)
+    token_expires = datetime.now(UTC) + timedelta(hours=24)
     
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
     user = {
         'username': username,
         'password': hashed_password,
         'display_name': display_name or username,
+        'email': email,
+        'email_verified': False,
+        'verification_token': verification_token,
+        'verification_token_expires': token_expires,
         'created_at': datetime.now(UTC),
         'contacts': []
     }
     result = users.insert_one(user)
     
-    return jsonify({
-        'success': True,
-        'user': {
-            'id': str(result.inserted_id),
-            'username': username,
-            'display_name': user['display_name']
-        }
-    })
+    # Send verification email
+    if send_verification_email(email, verification_token, user['display_name']):
+        return jsonify({
+            'success': True,
+            'message': 'Account created! Please check your email to verify your account.',
+            'needs_verification': True
+        })
+    else:
+        # Email failed but account created - user can request resend
+        return jsonify({
+            'success': True,
+            'message': 'Account created but we could not send verification email. Please try resending.',
+            'needs_verification': True
+        })
 
 @app.route('/api/auth/login', methods=['POST'])
 def api_login():
@@ -119,6 +188,15 @@ def api_login():
     user = users.find_one({'username': username})
     
     if user and bcrypt.check_password_hash(user['password'], password):
+        # Check if email is verified
+        if not user.get('email_verified', False):
+            return jsonify({
+                'success': False,
+                'error': 'Please verify your email before logging in',
+                'needs_verification': True,
+                'email': user.get('email', '')
+            })
+        
         return jsonify({
             'success': True,
             'user': {
@@ -130,15 +208,75 @@ def api_login():
     
     return jsonify({'success': False, 'error': 'Invalid username or password'})
 
+# Email verification endpoint
+@app.route('/verify/<token>')
+def verify_email(token):
+    user = users.find_one({'verification_token': token})
+    
+    if not user:
+        return render_template('verify.html', success=False, message='Invalid verification link')
+    
+    # Check if token expired
+    if user.get('verification_token_expires') and user['verification_token_expires'] < datetime.now(UTC):
+        return render_template('verify.html', success=False, message='Verification link has expired. Please request a new one.')
+    
+    # Mark email as verified
+    users.update_one(
+        {'_id': user['_id']},
+        {
+            '$set': {'email_verified': True},
+            '$unset': {'verification_token': '', 'verification_token_expires': ''}
+        }
+    )
+    
+    return render_template('verify.html', success=True, message='Email verified successfully! You can now log in.')
+
+# API endpoint to resend verification email
+@app.route('/api/auth/resend-verification', methods=['POST'])
+def resend_verification():
+    data = request.get_json()
+    email = data.get('email', '').strip().lower()
+    
+    if not email:
+        return jsonify({'success': False, 'error': 'Email is required'})
+    
+    user = users.find_one({'email': email})
+    
+    if not user:
+        return jsonify({'success': False, 'error': 'No account found with this email'})
+    
+    if user.get('email_verified'):
+        return jsonify({'success': False, 'error': 'Email is already verified'})
+    
+    # Generate new token
+    verification_token = secrets.token_urlsafe(32)
+    token_expires = datetime.now(UTC) + timedelta(hours=24)
+    
+    users.update_one(
+        {'_id': user['_id']},
+        {
+            '$set': {
+                'verification_token': verification_token,
+                'verification_token_expires': token_expires
+            }
+        }
+    )
+    
+    if send_verification_email(email, verification_token, user['display_name']):
+        return jsonify({'success': True, 'message': 'Verification email sent!'})
+    else:
+        return jsonify({'success': False, 'error': 'Failed to send email. Please try again later.'})
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         username = request.form.get('username', '').strip().lower()
         password = request.form.get('password', '')
         display_name = request.form.get('display_name', '').strip()
+        email = request.form.get('email', '').strip().lower()
         
-        if not username or not password:
-            return render_template('register.html', error='Username and password are required')
+        if not username or not password or not email:
+            return render_template('register.html', error='Username, email, and password are required')
         
         if len(username) < 3:
             return render_template('register.html', error='Username must be at least 3 characters')
@@ -146,9 +284,20 @@ def register():
         if len(password) < 6:
             return render_template('register.html', error='Password must be at least 6 characters')
         
+        if '@' not in email or '.' not in email:
+            return render_template('register.html', error='Please enter a valid email address')
+        
+        # Check if email already exists
+        if users.find_one({'email': email}):
+            return render_template('register.html', error='An account with this email already exists')
+        
         # Check if username exists
         if users.find_one({'username': username}):
             return render_template('register.html', error='Username already taken')
+        
+        # Generate verification token
+        verification_token = secrets.token_urlsafe(32)
+        token_expires = datetime.now(UTC) + timedelta(hours=24)
         
         # Create user
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
@@ -156,16 +305,19 @@ def register():
             'username': username,
             'password': hashed_password,
             'display_name': display_name or username,
+            'email': email,
+            'email_verified': False,
+            'verification_token': verification_token,
+            'verification_token_expires': token_expires,
             'created_at': datetime.now(UTC),
             'contacts': []
         }
-        result = users.insert_one(user)
+        users.insert_one(user)
         
-        session['user_id'] = str(result.inserted_id)
-        session['username'] = username
-        session['display_name'] = user['display_name']
+        # Send verification email
+        send_verification_email(email, verification_token, user['display_name'])
         
-        return redirect(url_for('chat'))
+        return render_template('register.html', success='Account created! Please check your email to verify your account.')
     
     return render_template('register.html')
 
@@ -178,6 +330,10 @@ def login():
         user = users.find_one({'username': username})
         
         if user and bcrypt.check_password_hash(user['password'], password):
+            # Check if email is verified
+            if not user.get('email_verified', False):
+                return render_template('login.html', error='Please verify your email before logging in. Check your inbox.')
+            
             session['user_id'] = str(user['_id'])
             session['username'] = user['username']
             session['display_name'] = user['display_name']

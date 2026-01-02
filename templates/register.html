@@ -82,6 +82,14 @@
             margin-bottom: 1rem;
             text-align: center;
         }
+        .success {
+            background: #e0ffe0;
+            color: #080;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
         .link {
             text-align: center;
             margin-top: 1.5rem;
@@ -111,7 +119,16 @@
         <div class="error">{{ error }}</div>
         {% endif %}
         
+        {% if success %}
+        <div class="success">{{ success }}</div>
+        {% endif %}
+        
         <form method="POST">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required autocomplete="email">
+                <p class="hint">We'll send a verification link to this email</p>
+            </div>
             <div class="form-group">
                 <label for="username">Username</label>
                 <input type="text" id="username" name="username" required autocomplete="username" pattern="[a-zA-Z0-9_]{3,20}">
