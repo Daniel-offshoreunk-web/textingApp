@@ -21,12 +21,11 @@ else:
     app.config['SESSION_COOKIE_SECURE'] = False
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
-# Force HTTPS in production
-@app.before_request
-def force_https():
-    if IS_PRODUCTION and request.headers.get('X-Forwarded-Proto', 'http') != 'https':
-        url = request.url.replace('http://', 'https://', 1)
-        return redirect(url, code=301)
+# Render handles HTTPS at the load balancer level, no redirect needed
+# Just ensure URLs are generated with https scheme in production
+if IS_PRODUCTION:
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 # MongoDB Atlas connection - use environment variable in production
 MONGO_URI = os.environ.get('MONGO_URI')
