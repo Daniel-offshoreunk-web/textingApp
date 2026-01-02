@@ -10,6 +10,7 @@ from urllib.parse import quote_plus
 import os
 import sys
 import secrets
+import threading
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
@@ -179,8 +180,12 @@ def api_register():
     }
     result = users.insert_one(user)
     
-    # Send welcome email with deactivation link
-    send_welcome_email(email, user['display_name'], username, deactivate_token)
+    # Send welcome email in background thread (doesn't block response)
+    email_thread = threading.Thread(
+        target=send_welcome_email,
+        args=(email, user['display_name'], username, deactivate_token)
+    )
+    email_thread.start()
     
     # Return user immediately - no verification needed
     return jsonify({
@@ -350,13 +355,17 @@ def register():
         }
         result = users.insert_one(user)
         
-        # Send welcome email with deactivation link
-        send_welcome_email(email, user['display_name'], username, deactivate_token)
-        
         # Log user in immediately
         session['user_id'] = str(result.inserted_id)
         session['username'] = username
         session['display_name'] = user['display_name']
+        
+        # Send welcome email in background thread (doesn't block redirect)
+        email_thread = threading.Thread(
+            target=send_welcome_email,
+            args=(email, user['display_name'], username, deactivate_token)
+        )
+        email_thread.start()
         
         return redirect(url_for('chat'))
     
