@@ -653,6 +653,7 @@
             const list = document.getElementById('messagesList');
             list.innerHTML = messages.map(m => `
                 <div class="message ${m.sender_id === currentUserId ? 'sent' : 'received'}">
+                    ${m.sender_id !== currentUserId ? `<div style="font-size:0.75rem;font-weight:600;margin-bottom:0.25rem;opacity:0.8;">${m.sender_name || 'User'}</div>` : ''}
                     ${m.content}
                     <div class="message-time">${new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
                 </div>
@@ -735,7 +736,7 @@
                 const div = document.createElement('div');
                 div.className = `message ${message.sender_id === currentUserId ? 'sent' : 'received'}`;
                 
-                const senderNameHtml = (currentIsGroup && message.sender_id !== currentUserId) 
+                const senderNameHtml = (message.sender_id !== currentUserId) 
                     ? `<div style="font-size:0.75rem;font-weight:600;margin-bottom:0.25rem;opacity:0.8;">${message.sender_name || 'User'}</div>` 
                     : '';
                 
