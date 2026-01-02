@@ -275,6 +275,18 @@
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
+        .new-group-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 5px;
+            transition: background 0.15s ease;
+        }
+        .new-group-btn:hover {
+            background: #e0e0e0;
+        }
         .conversation {
             padding: 1rem;
             border-bottom: 1px solid #f0f0f0;
@@ -289,6 +301,19 @@
         .conversation.active { 
             background: #e8eef9; 
             border-left: 3px solid #667eea;
+        }
+        .group-avatar {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.25rem;
+            flex-shrink: 0;
         }
         .avatar {
             width: 48px;
@@ -527,7 +552,7 @@
             .conversation {
                 padding: 0.75rem;
             }
-            .avatar {
+            .avatar, .group-avatar {
                 width: 40px;
                 height: 40px;
                 font-size: 1rem;
@@ -542,10 +567,99 @@
             cursor: pointer;
             padding: 0.5rem;
         }
+        
+        /* Modal styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            width: 90%;
+            max-width: 400px;
+            max-height: 80%;
+            overflow-y: auto;
+        }
+        .modal h2 {
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        .modal-close {
+            float: right;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #888;
+        }
+        .modal-close:hover {
+            color: #333;
+        }
+        .selected-members {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 1rem 0;
+            min-height: 2.5rem;
+        }
+        .member-chip {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .member-chip button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0;
+            line-height: 1;
+        }
     </style>
 </head>
 <body>
     <div id="API_BASE" data-url="https://textingapp.onrender.com"></div>
+
+    <!-- Group Creation Modal -->
+    <div id="groupModal" class="modal-overlay">
+        <div class="modal">
+            <button class="modal-close" onclick="closeGroupModal()">×</button>
+            <h2>👥 New Group Chat</h2>
+            <div class="form-group">
+                <label>Group Name</label>
+                <input type="text" id="groupName" placeholder="Enter group name..." style="width:100%;padding:0.75rem;border:2px solid #e0e0e0;border-radius:10px;font-size:16px;">
+            </div>
+            <div class="form-group">
+                <label>Add Members</label>
+                <input type="text" id="groupMemberSearch" placeholder="Search users..." style="width:100%;padding:0.75rem;border:2px solid #e0e0e0;border-radius:10px;font-size:16px;">
+                <div id="groupSearchResults" class="search-results"></div>
+            </div>
+            <div class="selected-members" id="selectedMembers">
+                <span style="color:#888;font-size:0.9rem;">No members selected</span>
+            </div>
+            <div id="groupError" class="error-msg"></div>
+            <button class="btn btn-primary" id="createGroupBtn" onclick="createGroup()">Create Group</button>
+        </div>
+    </div>
 
     <!-- Landing Page -->
     <div id="landingPage" class="page active">
@@ -805,6 +919,7 @@
             
             loadConversations();
             setupSearch();
+            setupGroupMemberSearch();
         }
 
         // Refresh conversations with visual feedback
@@ -826,22 +941,43 @@
                 const convos = await res.json();
                 
                 const list = document.getElementById('conversationsList');
+                const headerHtml = '<div class="conversations-header"><span>Chats' + (convos.length ? ' (' + convos.length + ')' : '') + '</span><div><button class="new-group-btn" onclick="openGroupModal()" title="New Group">👥</button><button class="refresh-btn" onclick="refreshConversations()" title="Refresh">🔄</button></div></div>';
+                
                 if (!convos.length) {
-                    list.innerHTML = '<div class="conversations-header"><span>Chats</span><button class="refresh-btn" onclick="refreshConversations()" title="Refresh">🔄</button></div><div style="padding:2rem;text-align:center;color:#888;background:white;">No conversations yet.<br>Search for a user to start chatting!</div>';
+                    list.innerHTML = headerHtml + '<div style="padding:2rem;text-align:center;color:#888;background:white;">No conversations yet.<br>Search for a user to start chatting!</div>';
                     return;
                 }
                 
-                list.innerHTML = '<div class="conversations-header"><span>Chats (' + convos.length + ')</span><button class="refresh-btn" onclick="refreshConversations()" title="Refresh">🔄</button></div>' + convos.map(c => `
-                    <div class="conversation ${c.id === currentConversationId ? 'active' : ''}" 
-                         onclick="openConversation('${c.id}', '${c.participant.display_name.replace(/'/g, "\\'")}', '${c.participant.id}')">
-                        <div class="avatar">${c.participant.display_name[0].toUpperCase()}</div>
-                        <div class="conversation-info">
-                            <div class="conversation-name">${c.participant.display_name}</div>
-                            <div class="conversation-preview">${c.last_message || 'No messages yet'}</div>
-                        </div>
-                        ${c.unread_count > 0 ? `<div class="unread-badge">${c.unread_count}</div>` : ''}
-                    </div>
-                `).join('');
+                list.innerHTML = headerHtml + convos.map(c => {
+                    if (c.is_group) {
+                        // Group chat
+                        const memberNames = c.participants ? c.participants.map(p => p.display_name).join(', ') : '';
+                        return `
+                            <div class="conversation ${c.id === currentConversationId ? 'active' : ''}" 
+                                 onclick="openGroupConversation('${c.id}', '${c.group_name.replace(/'/g, "\\'")}')">
+                                <div class="group-avatar">👥</div>
+                                <div class="conversation-info">
+                                    <div class="conversation-name">${c.group_name}</div>
+                                    <div class="conversation-preview">${c.last_message || memberNames || 'No messages yet'}</div>
+                                </div>
+                                ${c.unread_count > 0 ? `<div class="unread-badge">${c.unread_count}</div>` : ''}
+                            </div>
+                        `;
+                    } else {
+                        // Direct message
+                        return `
+                            <div class="conversation ${c.id === currentConversationId ? 'active' : ''}" 
+                                 onclick="openConversation('${c.id}', '${c.participant.display_name.replace(/'/g, "\\'")}', '${c.participant.id}')">
+                                <div class="avatar">${c.participant.display_name[0].toUpperCase()}</div>
+                                <div class="conversation-info">
+                                    <div class="conversation-name">${c.participant.display_name}</div>
+                                    <div class="conversation-preview">${c.last_message || 'No messages yet'}</div>
+                                </div>
+                                ${c.unread_count > 0 ? `<div class="unread-badge">${c.unread_count}</div>` : ''}
+                            </div>
+                        `;
+                    }
+                }).join('');
             } catch (err) {
                 console.error('Failed to load conversations:', err);
             }
@@ -912,14 +1048,18 @@
             }
         }
 
-        // Open conversation
+        // Open conversation (direct message)
         async function openConversation(conversationId, displayName, participantId) {
             currentConversationId = conversationId;
+            currentIsGroup = false;
             
             document.getElementById('emptyState').style.display = 'none';
             document.getElementById('activeChat').classList.add('visible');
             document.getElementById('chatName').textContent = displayName;
             document.getElementById('chatAvatar').textContent = displayName[0].toUpperCase();
+            // Reset avatar style (in case switching from group)
+            document.getElementById('chatAvatar').style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            document.getElementById('chatAvatar').style.borderRadius = '50%';
             
             socket.emit('join_conversation', { conversation_id: conversationId });
             
@@ -953,7 +1093,14 @@
             const list = document.getElementById('messagesList');
             const div = document.createElement('div');
             div.className = `message ${msg.sender_id === currentUser.id ? 'sent' : 'received'}`;
+            
+            // Show sender name in group chats for received messages
+            const senderNameHtml = (currentIsGroup && msg.sender_id !== currentUser.id) 
+                ? `<div style="font-size:0.75rem;font-weight:600;margin-bottom:0.25rem;opacity:0.8;">${msg.sender_name || 'User'}</div>` 
+                : '';
+            
             div.innerHTML = `
+                ${senderNameHtml}
                 ${msg.content}
                 <div class="message-time">${new Date(msg.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
             `;
@@ -993,6 +1140,178 @@
         function showSidebar() {
             document.getElementById('sidebar').classList.remove('hidden');
             document.getElementById('chatArea').classList.add('hidden');
+        }
+
+        // ========== GROUP CHAT FUNCTIONS ==========
+        let selectedGroupMembers = [];
+        let currentIsGroup = false;
+
+        function openGroupModal() {
+            selectedGroupMembers = [];
+            document.getElementById('groupName').value = '';
+            document.getElementById('groupMemberSearch').value = '';
+            document.getElementById('groupSearchResults').classList.remove('active');
+            document.getElementById('groupError').style.display = 'none';
+            updateSelectedMembersDisplay();
+            document.getElementById('groupModal').classList.add('active');
+        }
+
+        function closeGroupModal() {
+            document.getElementById('groupModal').classList.remove('active');
+        }
+
+        function updateSelectedMembersDisplay() {
+            const container = document.getElementById('selectedMembers');
+            if (selectedGroupMembers.length === 0) {
+                container.innerHTML = '<span style="color:#888;font-size:0.9rem;">No members selected</span>';
+            } else {
+                container.innerHTML = selectedGroupMembers.map(m => `
+                    <div class="member-chip">
+                        ${m.display_name}
+                        <button onclick="removeMember('${m.id}')">&times;</button>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function addMemberToGroup(id, displayName, username) {
+            if (!selectedGroupMembers.find(m => m.id === id)) {
+                selectedGroupMembers.push({ id, display_name: displayName, username });
+                updateSelectedMembersDisplay();
+            }
+            document.getElementById('groupMemberSearch').value = '';
+            document.getElementById('groupSearchResults').classList.remove('active');
+        }
+
+        function removeMember(id) {
+            selectedGroupMembers = selectedGroupMembers.filter(m => m.id !== id);
+            updateSelectedMembersDisplay();
+        }
+
+        function setupGroupMemberSearch() {
+            const input = document.getElementById('groupMemberSearch');
+            const results = document.getElementById('groupSearchResults');
+            
+            input.addEventListener('input', async () => {
+                const query = input.value.trim();
+                if (query.length < 2) {
+                    results.classList.remove('active');
+                    return;
+                }
+                
+                try {
+                    const res = await fetch(`${API_BASE}/api/search_users?q=${encodeURIComponent(query)}&user_id=${currentUser.id}`, {
+                        credentials: 'include'
+                    });
+                    const users = await res.json();
+                    
+                    // Filter out already selected members
+                    const filtered = users.filter(u => !selectedGroupMembers.find(m => m.id === u.id));
+                    
+                    if (filtered.length) {
+                        results.innerHTML = filtered.map(u => `
+                            <div class="search-result" onclick="addMemberToGroup('${u.id}', '${u.display_name.replace(/'/g, "\\'")}', '${u.username}')">
+                                <div class="avatar small">${u.display_name[0].toUpperCase()}</div>
+                                <div>
+                                    <div style="font-weight:600;">${u.display_name}</div>
+                                    <div style="font-size:0.875rem;color:#888;">@${u.username}</div>
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        results.innerHTML = '<div style="padding:1rem;color:#888;">No users found</div>';
+                    }
+                    results.classList.add('active');
+                } catch (err) {
+                    console.error('Search error:', err);
+                }
+            });
+        }
+
+        async function createGroup() {
+            const groupName = document.getElementById('groupName').value.trim();
+            
+            if (!groupName) {
+                showError('groupError', 'Please enter a group name');
+                return;
+            }
+            
+            if (selectedGroupMembers.length === 0) {
+                showError('groupError', 'Please add at least one member');
+                return;
+            }
+            
+            document.getElementById('createGroupBtn').disabled = true;
+            document.getElementById('createGroupBtn').textContent = 'Creating...';
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/create_group`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        current_user_id: currentUser.id,
+                        group_name: groupName,
+                        member_ids: selectedGroupMembers.map(m => m.id)
+                    })
+                });
+                const data = await res.json();
+                
+                document.getElementById('createGroupBtn').disabled = false;
+                document.getElementById('createGroupBtn').textContent = 'Create Group';
+                
+                if (data.success) {
+                    closeGroupModal();
+                    loadConversations();
+                    openGroupConversation(data.conversation_id, groupName);
+                } else {
+                    showError('groupError', data.error || 'Failed to create group');
+                }
+            } catch (err) {
+                document.getElementById('createGroupBtn').disabled = false;
+                document.getElementById('createGroupBtn').textContent = 'Create Group';
+                showError('groupError', 'Connection error. Please try again.');
+            }
+        }
+
+        async function openGroupConversation(conversationId, groupName) {
+            currentConversationId = conversationId;
+            currentIsGroup = true;
+            
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('activeChat').classList.add('visible');
+            document.getElementById('chatName').textContent = groupName;
+            document.getElementById('chatAvatar').textContent = '👥';
+            document.getElementById('chatAvatar').style.background = 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)';
+            document.getElementById('chatAvatar').style.borderRadius = '12px';
+            
+            socket.emit('join_conversation', { conversation_id: conversationId });
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/messages/${conversationId}?user_id=${currentUser.id}`, {
+                    credentials: 'include'
+                });
+                const messages = await res.json();
+                
+                const list = document.getElementById('messagesList');
+                list.innerHTML = messages.map(m => `
+                    <div class="message ${m.sender_id === currentUser.id ? 'sent' : 'received'}">
+                        ${m.sender_id !== currentUser.id ? `<div style="font-size:0.75rem;font-weight:600;margin-bottom:0.25rem;opacity:0.8;">${m.sender_name || 'User'}</div>` : ''}
+                        ${m.content}
+                        <div class="message-time">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                    </div>
+                `).join('');
+                list.scrollTop = list.scrollHeight;
+            } catch (err) {
+                console.error('Failed to load messages:', err);
+            }
+            
+            loadConversations();
+            document.getElementById('messageInput').focus();
+            
+            // Mobile
+            document.getElementById('sidebar').classList.add('hidden');
+            document.getElementById('chatArea').classList.remove('hidden');
         }
 
         // Check for saved session

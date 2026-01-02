@@ -466,22 +466,49 @@ def get_conversations():
     
     result = []
     for convo in user_convos:
-        # Get the other participant
-        other_id = [p for p in convo['participants'] if p != user_id][0]
-        other_user = users.find_one({'_id': ObjectId(other_id)})
+        is_group = convo.get('is_group', False)
         
-        if other_user:
+        if is_group:
+            # Group chat - get all participants except current user for display
+            participant_ids = [p for p in convo['participants'] if p != user_id]
+            participants_info = []
+            for pid in participant_ids[:5]:  # Limit to 5 for display
+                p_user = users.find_one({'_id': ObjectId(pid)})
+                if p_user:
+                    participants_info.append({
+                        'id': str(p_user['_id']),
+                        'username': p_user['username'],
+                        'display_name': p_user['display_name']
+                    })
+            
             result.append({
                 'id': str(convo['_id']),
-                'participant': {
-                    'id': str(other_user['_id']),
-                    'username': other_user['username'],
-                    'display_name': other_user['display_name']
-                },
+                'is_group': True,
+                'group_name': convo.get('group_name', 'Group Chat'),
+                'participants': participants_info,
+                'participant_count': len(convo['participants']),
                 'last_message': convo.get('last_message', ''),
                 'last_message_at': convo.get('last_message_at', '').isoformat() if convo.get('last_message_at') else None,
                 'unread_count': convo.get(f'unread_{user_id}', 0)
             })
+        else:
+            # Direct message - get the other participant
+            other_id = [p for p in convo['participants'] if p != user_id][0]
+            other_user = users.find_one({'_id': ObjectId(other_id)})
+            
+            if other_user:
+                result.append({
+                    'id': str(convo['_id']),
+                    'is_group': False,
+                    'participant': {
+                        'id': str(other_user['_id']),
+                        'username': other_user['username'],
+                        'display_name': other_user['display_name']
+                    },
+                    'last_message': convo.get('last_message', ''),
+                    'last_message_at': convo.get('last_message_at', '').isoformat() if convo.get('last_message_at') else None,
+                    'unread_count': convo.get(f'unread_{user_id}', 0)
+                })
     
     return jsonify(result)
 
@@ -533,9 +560,10 @@ def start_conversation():
     if not other_user_id:
         return jsonify({'error': 'User ID required'}), 400
     
-    # Check if conversation already exists
+    # Check if conversation already exists (only for 1-on-1)
     existing = conversations.find_one({
-        'participants': {'$all': [user_id, other_user_id]}
+        'participants': {'$all': [user_id, other_user_id], '$size': 2},
+        'is_group': {'$ne': True}
     })
     
     if existing:
@@ -544,6 +572,7 @@ def start_conversation():
     # Create new conversation
     convo = {
         'participants': [user_id, other_user_id],
+        'is_group': False,
         'created_at': datetime.now(UTC),
         'last_message_at': datetime.now(UTC),
         'last_message': '',
@@ -553,6 +582,49 @@ def start_conversation():
     result = conversations.insert_one(convo)
     
     return jsonify({'conversation_id': str(result.inserted_id)})
+
+@app.route('/api/create_group', methods=['POST'])
+def create_group():
+    data = request.get_json()
+    
+    # Support both session and current_user_id parameter
+    user_id = session.get('user_id') or data.get('current_user_id')
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    group_name = data.get('group_name', '').strip()
+    member_ids = data.get('member_ids', [])
+    
+    if not group_name:
+        return jsonify({'error': 'Group name is required'}), 400
+    
+    if len(member_ids) < 1:
+        return jsonify({'error': 'Add at least one other member'}), 400
+    
+    # Add current user to participants
+    all_participants = [user_id] + member_ids
+    
+    # Create unread counters for all participants
+    unread_fields = {f'unread_{p}': 0 for p in all_participants}
+    
+    # Create new group conversation
+    convo = {
+        'participants': all_participants,
+        'is_group': True,
+        'group_name': group_name,
+        'created_by': user_id,
+        'created_at': datetime.now(UTC),
+        'last_message_at': datetime.now(UTC),
+        'last_message': '',
+        **unread_fields
+    }
+    result = conversations.insert_one(convo)
+    
+    return jsonify({
+        'success': True,
+        'conversation_id': str(result.inserted_id),
+        'group_name': group_name
+    })
 
 # Socket.IO events
 @socketio.on('connect')
@@ -605,8 +677,10 @@ def handle_message(data):
     }
     result = messages.insert_one(message)
     
-    # Update conversation
-    other_id = [p for p in convo['participants'] if p != user_id][0]
+    # Update conversation - increment unread for all other participants
+    other_ids = [p for p in convo['participants'] if p != user_id]
+    update_inc = {f'unread_{oid}': 1 for oid in other_ids}
+    
     conversations.update_one(
         {'_id': ObjectId(conversation_id)},
         {
@@ -614,7 +688,7 @@ def handle_message(data):
                 'last_message': content[:50],
                 'last_message_at': datetime.now(UTC)
             },
-            '$inc': {f'unread_{other_id}': 1}
+            '$inc': update_inc
         }
     )
     
@@ -634,10 +708,11 @@ def handle_message(data):
         'created_at': datetime.now(UTC).isoformat()
     }, room=conversation_id)
     
-    # Notify other user
-    emit('conversation_updated', {
-        'conversation_id': conversation_id
-    }, room=other_id)
+    # Notify all other participants
+    for other_id in other_ids:
+        emit('conversation_updated', {
+            'conversation_id': conversation_id
+        }, room=other_id)
 
 @socketio.on('typing')
 def handle_typing(data):
