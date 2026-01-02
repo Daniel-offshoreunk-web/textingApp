@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: textapp
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --worker-class gevent -w 1 --bind 0.0.0.0:$PORT app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.6"
+      - key: RENDER
+        value: "true"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: MONGO_URI
+        sync: false
