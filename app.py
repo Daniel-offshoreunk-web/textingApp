@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from flask_socketio import SocketIO, emit, join_room
 from flask_bcrypt import Bcrypt
+from flask_cors import CORS
 from pymongo import MongoClient
 from bson import ObjectId
 from datetime import datetime, UTC
@@ -10,6 +11,9 @@ import sys
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+
+# Enable CORS for all domains (needed for Google Sites iframe)
+CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 
 # Production settings
 IS_PRODUCTION = os.environ.get('RENDER') == 'true'
