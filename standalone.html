@@ -940,17 +940,38 @@
                 });
                 const convos = await res.json();
                 
-                const list = document.getElementById('conversationsList');
-                const headerHtml = '<div class="conversations-header"><span>Chats' + (convos.length ? ' (' + convos.length + ')' : '') + '</span><div><button class="new-group-btn" onclick="openGroupModal()" title="New Group">👥</button><button class="refresh-btn" onclick="refreshConversations()" title="Refresh">🔄</button></div></div>';
+                // Separate direct messages and group chats
+                const directChats = convos.filter(c => !c.is_group);
+                const groupChats = convos.filter(c => c.is_group);
                 
-                if (!convos.length) {
-                    list.innerHTML = headerHtml + '<div style="padding:2rem;text-align:center;color:#888;background:white;">No conversations yet.<br>Search for a user to start chatting!</div>';
-                    return;
+                const list = document.getElementById('conversationsList');
+                
+                // Direct Messages Section
+                const dmHeaderHtml = '<div class="conversations-header"><span>Chats' + (directChats.length ? ' (' + directChats.length + ')' : '') + '</span><button class="refresh-btn" onclick="refreshConversations()" title="Refresh">🔄</button></div>';
+                
+                let dmHtml = '';
+                if (directChats.length) {
+                    dmHtml = directChats.map(c => `
+                        <div class="conversation ${c.id === currentConversationId ? 'active' : ''}" 
+                             onclick="openConversation('${c.id}', '${c.participant.display_name.replace(/'/g, "\\'")}', '${c.participant.id}')">
+                            <div class="avatar">${c.participant.display_name[0].toUpperCase()}</div>
+                            <div class="conversation-info">
+                                <div class="conversation-name">${c.participant.display_name}</div>
+                                <div class="conversation-preview">${c.last_message || 'No messages yet'}</div>
+                            </div>
+                            ${c.unread_count > 0 ? `<div class="unread-badge">${c.unread_count}</div>` : ''}
+                        </div>
+                    `).join('');
+                } else {
+                    dmHtml = '<div style="padding:1.5rem;text-align:center;color:#888;background:white;font-size:0.9rem;">No chats yet. Search for a user!</div>';
                 }
                 
-                list.innerHTML = headerHtml + convos.map(c => {
-                    if (c.is_group) {
-                        // Group chat
+                // Group Chats Section
+                const groupHeaderHtml = '<div class="conversations-header" style="margin-top:0.5rem;"><span>Groups' + (groupChats.length ? ' (' + groupChats.length + ')' : '') + '</span><button class="new-group-btn" onclick="openGroupModal()" title="New Group">➕</button></div>';
+                
+                let groupHtml = '';
+                if (groupChats.length) {
+                    groupHtml = groupChats.map(c => {
                         const memberNames = c.participants ? c.participants.map(p => p.display_name).join(', ') : '';
                         return `
                             <div class="conversation ${c.id === currentConversationId ? 'active' : ''}" 
@@ -963,21 +984,12 @@
                                 ${c.unread_count > 0 ? `<div class="unread-badge">${c.unread_count}</div>` : ''}
                             </div>
                         `;
-                    } else {
-                        // Direct message
-                        return `
-                            <div class="conversation ${c.id === currentConversationId ? 'active' : ''}" 
-                                 onclick="openConversation('${c.id}', '${c.participant.display_name.replace(/'/g, "\\'")}', '${c.participant.id}')">
-                                <div class="avatar">${c.participant.display_name[0].toUpperCase()}</div>
-                                <div class="conversation-info">
-                                    <div class="conversation-name">${c.participant.display_name}</div>
-                                    <div class="conversation-preview">${c.last_message || 'No messages yet'}</div>
-                                </div>
-                                ${c.unread_count > 0 ? `<div class="unread-badge">${c.unread_count}</div>` : ''}
-                            </div>
-                        `;
-                    }
-                }).join('');
+                    }).join('');
+                } else {
+                    groupHtml = '<div style="padding:1.5rem;text-align:center;color:#888;background:white;font-size:0.9rem;">No groups yet. Click ➕ to create one!</div>';
+                }
+                
+                list.innerHTML = dmHeaderHtml + dmHtml + groupHeaderHtml + groupHtml;
             } catch (err) {
                 console.error('Failed to load conversations:', err);
             }
