@@ -67,6 +67,65 @@ def index():
         return redirect(url_for('chat'))
     return render_template('index.html')
 
+# JSON API Auth endpoints for standalone HTML
+@app.route('/api/auth/register', methods=['POST'])
+def api_register():
+    data = request.get_json()
+    username = data.get('username', '').strip().lower()
+    password = data.get('password', '')
+    display_name = data.get('display_name', '').strip()
+    
+    if not username or not password:
+        return jsonify({'success': False, 'error': 'Username and password are required'})
+    
+    if len(username) < 3:
+        return jsonify({'success': False, 'error': 'Username must be at least 3 characters'})
+    
+    if len(password) < 6:
+        return jsonify({'success': False, 'error': 'Password must be at least 6 characters'})
+    
+    if users.find_one({'username': username}):
+        return jsonify({'success': False, 'error': 'Username already taken'})
+    
+    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+    user = {
+        'username': username,
+        'password': hashed_password,
+        'display_name': display_name or username,
+        'created_at': datetime.now(UTC),
+        'contacts': []
+    }
+    result = users.insert_one(user)
+    
+    return jsonify({
+        'success': True,
+        'user': {
+            'id': str(result.inserted_id),
+            'username': username,
+            'display_name': user['display_name']
+        }
+    })
+
+@app.route('/api/auth/login', methods=['POST'])
+def api_login():
+    data = request.get_json()
+    username = data.get('username', '').strip().lower()
+    password = data.get('password', '')
+    
+    user = users.find_one({'username': username})
+    
+    if user and bcrypt.check_password_hash(user['password'], password):
+        return jsonify({
+            'success': True,
+            'user': {
+                'id': str(user['_id']),
+                'username': user['username'],
+                'display_name': user['display_name']
+            }
+        })
+    
+    return jsonify({'success': False, 'error': 'Invalid username or password'})
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -93,7 +152,7 @@ def register():
             'username': username,
             'password': hashed_password,
             'display_name': display_name or username,
-            'created_at': datetime.utcnow(),
+            'created_at': datetime.now(UTC),
             'contacts': []
         }
         result = users.insert_one(user)
@@ -139,7 +198,9 @@ def chat():
 
 @app.route('/api/search_users')
 def search_users():
-    if 'user_id' not in session:
+    # Support both session and user_id parameter
+    user_id = session.get('user_id') or request.args.get('user_id')
+    if not user_id:
         return jsonify({'error': 'Not authenticated'}), 401
     
     query = request.args.get('q', '').strip().lower()
@@ -149,7 +210,7 @@ def search_users():
     # Search users by username (exclude current user)
     found_users = users.find({
         'username': {'$regex': query, '$options': 'i'},
-        '_id': {'$ne': ObjectId(session['user_id'])}
+        '_id': {'$ne': ObjectId(user_id)}
     }).limit(10)
     
     return jsonify([{
@@ -160,10 +221,10 @@ def search_users():
 
 @app.route('/api/conversations')
 def get_conversations():
-    if 'user_id' not in session:
+    # Support both session and user_id parameter
+    user_id = session.get('user_id') or request.args.get('user_id')
+    if not user_id:
         return jsonify({'error': 'Not authenticated'}), 401
-    
-    user_id = session['user_id']
     
     # Get all conversations for user
     user_convos = conversations.find({
@@ -193,10 +254,10 @@ def get_conversations():
 
 @app.route('/api/messages/<conversation_id>')
 def get_messages(conversation_id):
-    if 'user_id' not in session:
+    # Support both session and user_id parameter
+    user_id = session.get('user_id') or request.args.get('user_id')
+    if not user_id:
         return jsonify({'error': 'Not authenticated'}), 401
-    
-    user_id = session['user_id']
     
     # Verify user is part of conversation
     convo = conversations.find_one({
@@ -227,16 +288,17 @@ def get_messages(conversation_id):
 
 @app.route('/api/start_conversation', methods=['POST'])
 def start_conversation():
-    if 'user_id' not in session:
+    data = request.get_json()
+    
+    # Support both session and current_user_id parameter
+    user_id = session.get('user_id') or data.get('current_user_id')
+    if not user_id:
         return jsonify({'error': 'Not authenticated'}), 401
     
-    data = request.get_json()
     other_user_id = data.get('user_id')
     
     if not other_user_id:
         return jsonify({'error': 'User ID required'}), 400
-    
-    user_id = session['user_id']
     
     # Check if conversation already exists
     existing = conversations.find_one({
@@ -249,8 +311,8 @@ def start_conversation():
     # Create new conversation
     convo = {
         'participants': [user_id, other_user_id],
-        'created_at': datetime.utcnow(),
-        'last_message_at': datetime.utcnow(),
+        'created_at': datetime.now(UTC),
+        'last_message_at': datetime.now(UTC),
         'last_message': '',
         f'unread_{user_id}': 0,
         f'unread_{other_user_id}': 0
@@ -266,6 +328,13 @@ def handle_connect():
         join_room(session['user_id'])
         print(f"User {session['username']} connected")
 
+@socketio.on('authenticate')
+def handle_authenticate(data):
+    user_id = data.get('user_id')
+    if user_id:
+        join_room(user_id)
+        print(f"User {user_id} authenticated via standalone")
+
 @socketio.on('join_conversation')
 def handle_join(data):
     conversation_id = data.get('conversation_id')
@@ -274,7 +343,9 @@ def handle_join(data):
 
 @socketio.on('send_message')
 def handle_message(data):
-    if 'user_id' not in session:
+    # Support both session and sender_id from data
+    user_id = session.get('user_id') or data.get('sender_id')
+    if not user_id:
         return
     
     conversation_id = data.get('conversation_id')
@@ -282,8 +353,6 @@ def handle_message(data):
     
     if not conversation_id or not content:
         return
-    
-    user_id = session['user_id']
     
     # Verify user is in conversation
     convo = conversations.find_one({
@@ -299,7 +368,7 @@ def handle_message(data):
         'conversation_id': conversation_id,
         'sender_id': user_id,
         'content': content,
-        'created_at': datetime.utcnow()
+        'created_at': datetime.now(UTC)
     }
     result = messages.insert_one(message)
     
@@ -310,20 +379,26 @@ def handle_message(data):
         {
             '$set': {
                 'last_message': content[:50],
-                'last_message_at': datetime.utcnow()
+                'last_message_at': datetime.now(UTC)
             },
             '$inc': {f'unread_{other_id}': 1}
         }
     )
     
     # Broadcast message to conversation room
+    # Get display name from session or lookup user
+    sender_name = session.get('display_name')
+    if not sender_name:
+        sender_user = users.find_one({'_id': ObjectId(user_id)})
+        sender_name = sender_user['display_name'] if sender_user else 'Unknown'
+    
     emit('new_message', {
         'id': str(result.inserted_id),
         'conversation_id': conversation_id,
         'sender_id': user_id,
-        'sender_name': session['display_name'],
+        'sender_name': sender_name,
         'content': content,
-        'created_at': datetime.utcnow().isoformat()
+        'created_at': datetime.now(UTC).isoformat()
     }, room=conversation_id)
     
     # Notify other user
@@ -333,12 +408,19 @@ def handle_message(data):
 
 @socketio.on('typing')
 def handle_typing(data):
-    if 'user_id' in session:
+    user_id = session.get('user_id') or data.get('user_id')
+    if user_id:
         conversation_id = data.get('conversation_id')
         if conversation_id:
+            # Get display name
+            display_name = session.get('display_name')
+            if not display_name:
+                user = users.find_one({'_id': ObjectId(user_id)})
+                display_name = user['display_name'] if user else 'Someone'
+            
             emit('user_typing', {
-                'user_id': session['user_id'],
-                'username': session['display_name']
+                'user_id': user_id,
+                'username': display_name
             }, room=conversation_id, include_self=False)
 
 if __name__ == '__main__':
