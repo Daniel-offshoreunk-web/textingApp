@@ -90,22 +90,24 @@ def index():
 
 # Helper function to send welcome/notification email (non-blocking)
 def send_welcome_email(email, display_name, username, deactivate_token):
-    try:
-        # Check if email is configured
-        if not app.config['MAIL_USERNAME'] or not app.config['MAIL_PASSWORD']:
-            print("Email credentials not configured - skipping welcome email")
-            return False
-        
-        base_url = os.environ.get('BASE_URL', 'https://textingapp.onrender.com')
-        deactivate_link = f"{base_url}/deactivate/{deactivate_token}"
-        
-        print(f"Sending welcome email to {email}...")
-        
-        msg = Message(
-            'Welcome to TextingApp!',
-            recipients=[email]
-        )
-        msg.body = f"""Hi {display_name},
+    # Use app context for background thread
+    with app.app_context():
+        try:
+            # Check if email is configured
+            if not app.config['MAIL_USERNAME'] or not app.config['MAIL_PASSWORD']:
+                print("Email credentials not configured - skipping welcome email")
+                return False
+            
+            base_url = os.environ.get('BASE_URL', 'https://textingapp.onrender.com')
+            deactivate_link = f"{base_url}/deactivate/{deactivate_token}"
+            
+            print(f"Sending welcome email to {email}...")
+            
+            msg = Message(
+                'Welcome to TextingApp!',
+                recipients=[email]
+            )
+            msg.body = f"""Hi {display_name},
 
 Welcome to TextingApp! Your account has been created successfully.
 
@@ -118,7 +120,7 @@ DIDN'T CREATE THIS ACCOUNT?
 If you didn't create this account, someone may be using your email address without permission.
 Click this link to immediately delete the account: {deactivate_link}
 """
-        msg.html = f"""
+            msg.html = f"""
 <h2>Welcome to TextingApp!</h2>
 <p>Hi {display_name},</p>
 <p>Your account has been created successfully.</p>
@@ -129,12 +131,12 @@ Click this link to immediately delete the account: {deactivate_link}
 <p style="color: #666; font-size: 13px;">If you didn't create this account, someone may be using your email address without permission.</p>
 <p><a href="{deactivate_link}" style="background-color: #c00; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">Delete This Account</a></p>
 """
-        mail.send(msg)
-        print(f"Welcome email sent to {email}")
-        return True
-    except Exception as e:
-        print(f"Failed to send welcome email: {e}")
-        return False
+            mail.send(msg)
+            print(f"Welcome email sent to {email}")
+            return True
+        except Exception as e:
+            print(f"Failed to send welcome email: {e}")
+            return False
 
 # JSON API Auth endpoints for standalone HTML
 @app.route('/api/auth/register', methods=['POST'])
