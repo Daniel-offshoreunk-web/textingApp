@@ -585,17 +585,10 @@
                 document.getElementById('registerBtn').textContent = 'Create Account';
                 
                 if (data.success) {
-                    if (data.needs_verification) {
-                        // Show verification sent page
-                        document.getElementById('sentToEmail').textContent = email;
-                        document.getElementById('registerForm').reset();
-                        showPage('verificationSentPage');
-                    } else {
-                        // Legacy: if verification not required
-                        currentUser = data.user;
-                        localStorage.setItem('user', JSON.stringify(currentUser));
-                        initChat();
-                    }
+                    // Login immediately after registration
+                    currentUser = data.user;
+                    localStorage.setItem('user', JSON.stringify(currentUser));
+                    initChat();
                 } else {
                     showError('registerError', data.error || 'Registration failed');
                 }

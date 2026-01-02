@@ -87,48 +87,52 @@ def index():
         return redirect(url_for('chat'))
     return render_template('index.html')
 
-# Helper function to send verification email
-def send_verification_email(email, token, display_name):
+# Helper function to send welcome/notification email (non-blocking)
+def send_welcome_email(email, display_name, username, deactivate_token):
     try:
         # Check if email is configured
         if not app.config['MAIL_USERNAME'] or not app.config['MAIL_PASSWORD']:
-            print("ERROR: Email credentials not configured!")
-            print(f"MAIL_USERNAME: {'set' if app.config['MAIL_USERNAME'] else 'NOT SET'}")
-            print(f"MAIL_PASSWORD: {'set' if app.config['MAIL_PASSWORD'] else 'NOT SET'}")
+            print("Email credentials not configured - skipping welcome email")
             return False
-            
-        base_url = os.environ.get('BASE_URL', 'https://textingapp.onrender.com')
-        verify_link = f"{base_url}/verify/{token}"
         
-        print(f"Sending verification email to {email}...")
+        base_url = os.environ.get('BASE_URL', 'https://textingapp.onrender.com')
+        deactivate_link = f"{base_url}/deactivate/{deactivate_token}"
+        
+        print(f"Sending welcome email to {email}...")
         
         msg = Message(
-            'Verify your TextingApp account',
+            'Welcome to TextingApp!',
             recipients=[email]
         )
         msg.body = f"""Hi {display_name},
 
-Welcome to TextingApp! Please verify your email by clicking the link below:
+Welcome to TextingApp! Your account has been created successfully.
 
-{verify_link}
+Username: {username}
 
-This link expires in 24 hours.
+You can now log in and start messaging!
 
-If you didn't create this account, you can ignore this email.
+---
+DIDN'T CREATE THIS ACCOUNT?
+If you didn't create this account, someone may be using your email address without permission.
+Click this link to immediately delete the account: {deactivate_link}
 """
         msg.html = f"""
 <h2>Welcome to TextingApp!</h2>
 <p>Hi {display_name},</p>
-<p>Please verify your email by clicking the button below:</p>
-<p><a href="{verify_link}" style="background-color: #4CAF50; color: white; padding: 14px 20px; text-decoration: none; border-radius: 4px;">Verify Email</a></p>
-<p>Or copy this link: {verify_link}</p>
-<p>This link expires in 24 hours.</p>
-<p>If you didn't create this account, you can ignore this email.</p>
+<p>Your account has been created successfully.</p>
+<p><strong>Username:</strong> {username}</p>
+<p>You can now log in and start messaging!</p>
+<hr>
+<p style="color: #c00; font-size: 14px; margin-top: 20px;"><strong>Didn't create this account?</strong></p>
+<p style="color: #666; font-size: 13px;">If you didn't create this account, someone may be using your email address without permission.</p>
+<p><a href="{deactivate_link}" style="background-color: #c00; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">Delete This Account</a></p>
 """
         mail.send(msg)
+        print(f"Welcome email sent to {email}")
         return True
     except Exception as e:
-        print(f"Failed to send verification email: {e}")
+        print(f"Failed to send welcome email: {e}")
         return False
 
 # JSON API Auth endpoints for standalone HTML
@@ -160,9 +164,8 @@ def api_register():
     if users.find_one({'username': username}):
         return jsonify({'success': False, 'error': 'Username already taken'})
     
-    # Generate verification token
-    verification_token = secrets.token_urlsafe(32)
-    token_expires = datetime.now(UTC) + timedelta(hours=24)
+    # Generate deactivation token (for email owner to delete account if not theirs)
+    deactivate_token = secrets.token_urlsafe(32)
     
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
     user = {
@@ -170,28 +173,24 @@ def api_register():
         'password': hashed_password,
         'display_name': display_name or username,
         'email': email,
-        'email_verified': False,
-        'verification_token': verification_token,
-        'verification_token_expires': token_expires,
+        'deactivate_token': deactivate_token,
         'created_at': datetime.now(UTC),
         'contacts': []
     }
     result = users.insert_one(user)
     
-    # Send verification email
-    if send_verification_email(email, verification_token, user['display_name']):
-        return jsonify({
-            'success': True,
-            'message': 'Account created! Please check your email to verify your account.',
-            'needs_verification': True
-        })
-    else:
-        # Email failed but account created - user can request resend
-        return jsonify({
-            'success': True,
-            'message': 'Account created but we could not send verification email. Please try resending.',
-            'needs_verification': True
-        })
+    # Send welcome email with deactivation link
+    send_welcome_email(email, user['display_name'], username, deactivate_token)
+    
+    # Return user immediately - no verification needed
+    return jsonify({
+        'success': True,
+        'user': {
+            'id': str(result.inserted_id),
+            'username': username,
+            'display_name': user['display_name']
+        }
+    })
 
 @app.route('/api/auth/login', methods=['POST'])
 def api_login():
@@ -202,15 +201,6 @@ def api_login():
     user = users.find_one({'username': username})
     
     if user and bcrypt.check_password_hash(user['password'], password):
-        # Check if email is verified
-        if not user.get('email_verified', False):
-            return jsonify({
-                'success': False,
-                'error': 'Please verify your email before logging in',
-                'needs_verification': True,
-                'email': user.get('email', '')
-            })
-        
         return jsonify({
             'success': True,
             'user': {
@@ -344,9 +334,8 @@ def register():
         if users.find_one({'username': username}):
             return render_template('register.html', error='Username already taken')
         
-        # Generate verification token
-        verification_token = secrets.token_urlsafe(32)
-        token_expires = datetime.now(UTC) + timedelta(hours=24)
+        # Generate deactivation token (for email owner to delete account if not theirs)
+        deactivate_token = secrets.token_urlsafe(32)
         
         # Create user
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
@@ -355,18 +344,21 @@ def register():
             'password': hashed_password,
             'display_name': display_name or username,
             'email': email,
-            'email_verified': False,
-            'verification_token': verification_token,
-            'verification_token_expires': token_expires,
+            'deactivate_token': deactivate_token,
             'created_at': datetime.now(UTC),
             'contacts': []
         }
-        users.insert_one(user)
+        result = users.insert_one(user)
         
-        # Send verification email
-        send_verification_email(email, verification_token, user['display_name'])
+        # Send welcome email with deactivation link
+        send_welcome_email(email, user['display_name'], username, deactivate_token)
         
-        return render_template('register.html', success='Account created! Please check your email to verify your account.')
+        # Log user in immediately
+        session['user_id'] = str(result.inserted_id)
+        session['username'] = username
+        session['display_name'] = user['display_name']
+        
+        return redirect(url_for('chat'))
     
     return render_template('register.html')
 
@@ -379,13 +371,6 @@ def login():
         user = users.find_one({'username': username})
         
         if user and bcrypt.check_password_hash(user['password'], password):
-            # Check if email is verified
-            if not user.get('email_verified', False):
-                return render_template('login.html', 
-                    needs_verification=True,
-                    user_email=user.get('email', ''),
-                    error='Please verify your email before logging in. Check your inbox.')
-            
             session['user_id'] = str(user['_id'])
             session['username'] = user['username']
             session['display_name'] = user['display_name']
@@ -394,6 +379,31 @@ def login():
         return render_template('login.html', error='Invalid username or password')
     
     return render_template('login.html')
+
+# Deactivate account - for email owners who didn't create the account
+@app.route('/deactivate/<token>')
+def deactivate_account(token):
+    user = users.find_one({'deactivate_token': token})
+    
+    if not user:
+        return render_template('deactivate.html', success=False, message='Invalid or expired deactivation link')
+    
+    user_id = str(user['_id'])
+    username = user['username']
+    
+    # Delete all user's messages
+    messages.delete_many({'sender_id': user_id})
+    
+    # Delete all conversations involving this user
+    conversations.delete_many({'participants': user_id})
+    
+    # Delete the user
+    users.delete_one({'_id': user['_id']})
+    
+    print(f"Account deactivated via email link: {username}")
+    
+    return render_template('deactivate.html', success=True, 
+        message=f'Account "{username}" has been permanently deleted. If you created this account by mistake, you can create a new one.')
 
 @app.route('/logout')
 def logout():
