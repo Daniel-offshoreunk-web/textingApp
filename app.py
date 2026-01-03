@@ -146,7 +146,7 @@ Click this link to immediately delete the account: {deactivate_link}
 
 # JSON API Auth endpoints for standalone HTML
 @app.route('/api/auth/register', methods=['POST'])
-def api_register():
+def api_auth_register():
     data = request.get_json()
     username = data.get('username', '').strip().lower()
     password = data.get('password', '')
