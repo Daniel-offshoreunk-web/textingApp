@@ -1322,6 +1322,7 @@
             <button id="selectButton" onclick="showClassSelection()">Select Class</button>
             <button id="summonHomeButton" class="home-action" onclick="showSummonScreen()">Summon</button>
             <button id="eventsHomeButton" class="home-action" onclick="showEventsScreen()" style="background:linear-gradient(90deg,#f59e0b,#ef4444); color:#fff;"><span id="eventsFireIcon"></span> Events</button>
+            <button id="offlineVersionBtn" class="home-action" onclick="downloadOfflineVersion()" style="background:linear-gradient(90deg,#6366f1,#8b5cf6); color:#fff;">📥 Offline Version</button>
         </div>
     </div>
     <div id="classSelection">
@@ -8557,6 +8558,20 @@
                 }
             } catch (e) {}
         }
+
+            // Download offline version of the game
+            function downloadOfflineVersion() {
+                const htmlContent = document.documentElement.outerHTML;
+                const blob = new Blob(['<!DOCTYPE html>\n' + htmlContent], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'TBD_Offline.html';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
 
             function showClassSelection() {
                 document.getElementById('homeScreen').style.display = 'none';
