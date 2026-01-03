@@ -34,6 +34,68 @@
             flex-direction: column;
         }
         
+        /* Server Wake-up Screen */
+        .server-wake-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+        }
+        .server-wake-screen.hidden { display: none; }
+        .server-wake-screen h1 {
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        .wake-status {
+            color: rgba(255,255,255,0.9);
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+        .wake-progress {
+            width: 250px;
+            height: 6px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+        .wake-progress-bar {
+            height: 100%;
+            background: white;
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .wake-tip {
+            color: rgba(255,255,255,0.7);
+            font-size: 0.85rem;
+            text-align: center;
+            max-width: 300px;
+            padding: 0 1rem;
+        }
+        .wake-retry-btn {
+            margin-top: 1.5rem;
+            padding: 0.75rem 2rem;
+            background: white;
+            border: none;
+            border-radius: 25px;
+            color: #667eea;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: none;
+        }
+        .wake-retry-btn:hover { transform: scale(1.05); }
+        
         /* Auth Pages */
         .auth-container {
             position: absolute;
@@ -637,7 +699,18 @@
     </style>
 </head>
 <body>
-    <div id="API_BASE" data-url="https://textingapp.onrender.com"></div>
+    <!-- Server Wake-up Screen -->
+    <div id="serverWakeScreen" class="server-wake-screen">
+        <h1>💬 TextApp</h1>
+        <div class="wake-status" id="wakeStatus">Connecting to server...</div>
+        <div class="wake-progress">
+            <div class="wake-progress-bar" id="wakeProgressBar"></div>
+        </div>
+        <div class="wake-tip" id="wakeTip">Free servers sleep after inactivity. Waking up usually takes 10-30 seconds.</div>
+        <button class="wake-retry-btn" id="wakeRetryBtn" onclick="startServerWake()">Retry Connection</button>
+    </div>
+
+    <div id="API_BASE" data-url="https://textingapp-jo5z.onrender.com"></div>
 
     <!-- Group Creation Modal -->
     <div id="groupModal" class="modal-overlay">
@@ -780,11 +853,73 @@
     </div>
 
     <script>
-        const API_BASE = 'https://textingapp.onrender.com';
+        const API_BASE = 'https://textingapp-jo5z.onrender.com';
         let socket = null;
         let currentUser = null;
         let currentConversationId = null;
         let typingTimeout = null;
+        let serverReady = false;
+
+        // ==================== SERVER WAKE-UP ====================
+        async function startServerWake() {
+            const statusEl = document.getElementById('wakeStatus');
+            const progressBar = document.getElementById('wakeProgressBar');
+            const tipEl = document.getElementById('wakeTip');
+            const retryBtn = document.getElementById('wakeRetryBtn');
+            
+            retryBtn.style.display = 'none';
+            statusEl.textContent = 'Connecting to server...';
+            tipEl.textContent = 'Free servers sleep after inactivity. Waking up usually takes 10-30 seconds.';
+            
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress = Math.min(progress + 2, 90);
+                progressBar.style.width = progress + '%';
+            }, 500);
+            
+            const maxAttempts = 20;
+            let attempts = 0;
+            
+            while (attempts < maxAttempts && !serverReady) {
+                attempts++;
+                statusEl.textContent = `Waking up server... (attempt ${attempts}/${maxAttempts})`;
+                
+                try {
+                    const controller = new AbortController();
+                    const timeout = setTimeout(() => controller.abort(), 8000);
+                    
+                    const res = await fetch(`${API_BASE}/api/conversations`, {
+                        signal: controller.signal,
+                        credentials: 'include'
+                    });
+                    clearTimeout(timeout);
+                    
+                    if (res.ok || res.status === 401) {
+                        serverReady = true;
+                        clearInterval(progressInterval);
+                        progressBar.style.width = '100%';
+                        statusEl.textContent = 'Server ready!';
+                        
+                        setTimeout(() => {
+                            document.getElementById('serverWakeScreen').classList.add('hidden');
+                        }, 500);
+                        return;
+                    }
+                } catch (e) {
+                    // Server still waking up
+                }
+                
+                await new Promise(r => setTimeout(r, 2000));
+            }
+            
+            clearInterval(progressInterval);
+            statusEl.textContent = 'Server is taking longer than usual...';
+            tipEl.textContent = 'The server might be under heavy load. Click retry to try again.';
+            retryBtn.style.display = 'block';
+        }
+        
+        // Start wake-up on page load
+        startServerWake();
 
         // Page navigation
         function showPage(pageId) {
