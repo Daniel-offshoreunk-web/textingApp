@@ -2729,12 +2729,22 @@
             }
         }
         
-        // Auto-save periodically (every 30 seconds) and on important events
-        setInterval(() => {
-            if (currentUser && !isGuest) {
+        // Debounced save - triggers save after data changes with 2 second delay
+        let saveTimeout = null;
+        function triggerSave() {
+            if (!currentUser || isGuest) return;
+            if (saveTimeout) clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
                 saveGameToServer();
-            }
-        }, 30000);
+            }, 2000); // 2 second debounce
+        }
+        
+        // Immediate save for critical changes (class unlocks, purchases)
+        function triggerImmediateSave() {
+            if (!currentUser || isGuest) return;
+            if (saveTimeout) clearTimeout(saveTimeout);
+            saveGameToServer();
+        }
     </script>
     
     <script>
@@ -2861,7 +2871,7 @@
         }
 
         function saveClassShards() {
-            // No-op: persistence disabled for now
+            triggerSave(); // Save to cloud on shard changes
         }
 
         // Save and load quest state (questStats, quest progress, claimable/completed/reward flags)
@@ -2880,6 +2890,7 @@
                     }
                 };
                 localStorage.setItem('gg_questState_v1', JSON.stringify(payload));
+                triggerSave(); // Also save to cloud
             } catch (e) { console.warn('saveQuestState failed', e); }
         }
 
@@ -2972,7 +2983,7 @@
         };
 
         function saveUnlockedClasses() {
-            // No-op: persistence disabled for now
+            triggerImmediateSave(); // Immediately save to cloud on class unlock
         }
 
         function resetUnlocks() {
@@ -4089,6 +4100,7 @@
             updateExpDisplays();
             updateCoinDisplay();
             updateBuyButtons();
+            triggerSave(); // Save after buying EXP
         }
         
         
@@ -8410,6 +8422,7 @@
                 }
             } catch (e) {}
             document.getElementById('gameOver').style.display = 'block';
+            triggerImmediateSave(); // Save progress after game over
         }
         
         // Restart game
@@ -8560,6 +8573,7 @@
                     gameState.barriers = [];
                 }
             } catch (e) {}
+            triggerImmediateSave(); // Save progress when returning home
         }
 
             // Download offline version of the game
