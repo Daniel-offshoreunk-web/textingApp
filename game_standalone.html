@@ -426,6 +426,30 @@
             text-align: center;
         }
 
+        /* Home buttons grid (2x2 on wide, 1 column on narrow) */
+        .home-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+            max-width: 720px;
+            margin: 0 auto;
+            align-items: center;
+            justify-items: center;
+            width: 100%;
+            padding: 0 12px;
+        }
+        .home-buttons button, .home-buttons .home-action {
+            width: 100%;
+            min-width: 0; /* allow grid sizing */
+            padding-left: 28px;
+            padding-right: 28px;
+        }
+        @media (max-width: 720px) {
+            .home-buttons { grid-template-columns: 1fr; max-width: 360px; }
+            #playButton { font-size: 24px; padding: 18px 28px; }
+            #playButton, #selectButton, #summonHomeButton, #eventsHomeButton { border-radius: 12px; }
+        }
+
         /* Play button green */
         #playButton {
             background: linear-gradient(90deg, #3fe1a4 0%, #2cc6f2 100%);
@@ -1341,13 +1365,11 @@
     <div id="homeScreen">
         <h1>TBD</h1>
         <!-- Home buttons: Select Class, Play, Summon, Events -->
-        <div class="home-buttons" style="display:flex; flex-direction:column; gap:10px; align-items:center; max-width:280px; margin:0 auto;">
+        <div class="home-buttons">
             <button id="playButton" onclick="startGame()">PLAY</button>
             <button id="selectButton" onclick="showClassSelection()">Select Class</button>
-            <div style="display:flex; gap:10px; width:100%;">
-                <button id="summonHomeButton" class="home-action" onclick="showSummonScreen()" style="flex:1;">Summon</button>
-                <button id="eventsHomeButton" class="home-action" onclick="showEventsScreen()" style="flex:1; background:linear-gradient(90deg,#f59e0b,#ef4444); color:#fff;"><span id="eventsFireIcon"></span> Events</button>
-            </div>
+            <button id="summonHomeButton" class="home-action" onclick="showSummonScreen()">Summon</button>
+            <button id="eventsHomeButton" class="home-action" onclick="showEventsScreen()" style="background:linear-gradient(90deg,#f59e0b,#ef4444); color:#fff;"><span id="eventsFireIcon"></span> Events</button>
         </div>
     </div>
     <div id="classSelection">
