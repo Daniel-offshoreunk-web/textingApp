@@ -1267,6 +1267,7 @@
         </div>
         <div class="wake-tip" id="wakeTip">Free servers sleep after inactivity. Waking up usually takes 10-30 seconds.</div>
         <button class="wake-retry-btn" id="wakeRetryBtn" onclick="startServerWake()">Retry Connection</button>
+        <button class="wake-retry-btn" id="offlineVersionBtn" onclick="downloadOfflineVersion()" style="background:linear-gradient(90deg,#6366f1,#8b5cf6); margin-top:10px;">📥 Download Offline Version</button>
     </div>
 
     <!-- Auth Screen -->
@@ -1317,12 +1318,13 @@
     <div id="homeScreen">
         <h1>TBD</h1>
         <!-- Home buttons: Select Class, Play, Summon, Events -->
-        <div class="home-buttons" style="display:flex; flex-direction:column; gap:14px; align-items:center;">
+        <div class="home-buttons" style="display:flex; flex-direction:column; gap:10px; align-items:center; max-width:280px; margin:0 auto;">
             <button id="playButton" onclick="startGame()">PLAY</button>
             <button id="selectButton" onclick="showClassSelection()">Select Class</button>
-            <button id="summonHomeButton" class="home-action" onclick="showSummonScreen()">Summon</button>
-            <button id="eventsHomeButton" class="home-action" onclick="showEventsScreen()" style="background:linear-gradient(90deg,#f59e0b,#ef4444); color:#fff;"><span id="eventsFireIcon"></span> Events</button>
-            <button id="offlineVersionBtn" class="home-action" onclick="downloadOfflineVersion()" style="background:linear-gradient(90deg,#6366f1,#8b5cf6); color:#fff;">📥 Offline Version</button>
+            <div style="display:flex; gap:10px; width:100%;">
+                <button id="summonHomeButton" class="home-action" onclick="showSummonScreen()" style="flex:1;">Summon</button>
+                <button id="eventsHomeButton" class="home-action" onclick="showEventsScreen()" style="flex:1; background:linear-gradient(90deg,#f59e0b,#ef4444); color:#fff;"><span id="eventsFireIcon"></span> Events</button>
+            </div>
         </div>
     </div>
     <div id="classSelection">
