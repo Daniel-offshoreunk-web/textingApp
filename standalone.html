@@ -1474,7 +1474,7 @@
         Object.assign(btn.style, {
             position: 'fixed',
             left: '12px',
-            bottom: '12px',
+            bottom: 'calc(env(safe-area-inset-bottom, 12px) + 18px)',
             zIndex: 200000,
             background: 'rgba(0,0,0,0.6)',
             color: '#fff',
