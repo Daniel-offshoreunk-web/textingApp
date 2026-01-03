@@ -1512,6 +1512,32 @@
         ['fullscreenchange','webkitfullscreenchange','mozfullscreenchange','MSFullscreenChange'].forEach(ev => document.addEventListener(ev, ()=>{
             btn.textContent = isFullscreen() ? '⤢' : '⤢';
         }));
+
+        // Attempt to auto-enter fullscreen on load. If blocked by browser, enter on first user gesture.
+        async function requestFS() {
+            const el = document.documentElement;
+            const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+            if (!req) return;
+            try {
+                await req.call(el);
+            } catch (e) {
+                // blocked or failed
+            }
+        }
+
+        function tryAutoFullscreen() {
+            requestFS();
+            // If not fullscreen yet, wait for first user gesture
+            setTimeout(() => {
+                if (!isFullscreen()) {
+                    const onFirst = async () => { await requestFS(); };
+                    document.addEventListener('pointerdown', onFirst, { once: true });
+                }
+            }, 400);
+        }
+
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tryAutoFullscreen);
+        else tryAutoFullscreen();
     })();
     </script>
 </body>

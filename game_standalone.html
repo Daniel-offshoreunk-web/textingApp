@@ -119,6 +119,27 @@
         else btn.style.display = 'block';
 
         btn.addEventListener('click', toggleFullscreen);
+
+        // Attempt to auto-enter fullscreen on load. If blocked by browser, enter on first user gesture.
+        async function requestFS() {
+            const el = document.documentElement;
+            const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+            if (!req) return;
+            try { await req.call(el); } catch (e) { }
+        }
+
+        function tryAutoFullscreen() {
+            requestFS();
+            setTimeout(() => {
+                if (!isFullscreen()) {
+                    const onFirst = async () => { await requestFS(); };
+                    document.addEventListener('pointerdown', onFirst, { once: true });
+                }
+            }, 400);
+        }
+
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tryAutoFullscreen);
+        else tryAutoFullscreen();
     })();
     </script>
     </style>
