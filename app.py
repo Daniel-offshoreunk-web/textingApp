@@ -543,12 +543,25 @@ def get_messages(conversation_id):
         'conversation_id': conversation_id
     }).sort('created_at', 1).limit(100)
     
-    return jsonify([{
-        'id': str(m['_id']),
-        'sender_id': m['sender_id'],
-        'content': m['content'],
-        'created_at': m['created_at'].isoformat()
-    } for m in msgs])
+    # Build response with sender names
+    result = []
+    sender_cache = {}
+    for m in msgs:
+        sender_id = m['sender_id']
+        # Cache sender names to avoid repeated lookups
+        if sender_id not in sender_cache:
+            sender = users.find_one({'_id': ObjectId(sender_id)})
+            sender_cache[sender_id] = sender['display_name'] if sender else 'Unknown'
+        
+        result.append({
+            'id': str(m['_id']),
+            'sender_id': sender_id,
+            'sender_name': sender_cache[sender_id],
+            'content': m['content'],
+            'created_at': m['created_at'].isoformat()
+        })
+    
+    return jsonify(result)
 
 @app.route('/api/start_conversation', methods=['POST'])
 def start_conversation():
