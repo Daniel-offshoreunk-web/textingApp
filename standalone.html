@@ -14,7 +14,7 @@
         html {
             height: 100%;
             width: 100%;
-            overflow: auto; /* allow iframe/document scrolling */
+            overflow: hidden; /* prevent page scrolling inside iframe */
             position: relative;
             min-height: 100%;
         }
@@ -23,7 +23,7 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             position: relative;
             min-height: 100%;
-            overflow: auto; /* enable scrolling when content exceeds iframe height */
+            overflow: hidden; /* disable document scrolling; allow internal panels to scroll */
             display: flex;
             flex-direction: column;
             -webkit-overflow-scrolling: touch;
