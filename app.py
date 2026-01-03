@@ -90,9 +90,13 @@ def index():
     return render_template('index.html')
 
 # Health check endpoint for server wake-up (no auth required)
-@app.route('/api/health')
+@app.route('/api/health', methods=['GET', 'OPTIONS'])
 def health_check():
-    return jsonify({'status': 'ok', 'message': 'Server is running'})
+    response = jsonify({'status': 'ok', 'message': 'Server is running'})
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Methods', 'GET, OPTIONS')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+    return response
 
 # Helper function to send welcome/notification email (non-blocking)
 def send_welcome_email(email, display_name, username, deactivate_token):
