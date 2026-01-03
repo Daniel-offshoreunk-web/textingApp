@@ -201,7 +201,7 @@ def api_register():
     })
 
 @app.route('/api/auth/login', methods=['POST'])
-def api_login():
+def api_auth_login():
     data = request.get_json()
     username = data.get('username', '').strip().lower()
     password = data.get('password', '')
