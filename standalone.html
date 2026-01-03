@@ -14,24 +14,19 @@
         html {
             height: 100%;
             width: 100%;
-            overflow: hidden;
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            overflow: auto; /* allow iframe/document scrolling */
+            position: relative;
+            min-height: 100%;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Color Emoji', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            overflow: hidden;
+            position: relative;
+            min-height: 100%;
+            overflow: auto; /* enable scrolling when content exceeds iframe height */
             display: flex;
             flex-direction: column;
+            -webkit-overflow-scrolling: touch;
         }
         
         /* Server Wake-up Screen */

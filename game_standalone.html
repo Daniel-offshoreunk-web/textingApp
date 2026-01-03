@@ -77,18 +77,23 @@
         window.addEventListener('load', () => { ensureCardLayout(); equalizeCardHeights(); });
     });
     </script>
-    <style>
-        * {
-            box-sizing: border-box;
-        }
+    </style>
+</head>
+<body>
+    <button id="logoutBtn" style="display:none;">Logout</button>
+    <!-- Wake / loading screen -->
         
+        <style>
+        /* Make the document iframe-friendly: allow scrolling and full-size percent-based containers */
+        html, body { height: 100%; width: 100%; overflow: auto !important; position: relative; -webkit-overflow-scrolling: touch; }
+
         /* Loading Screen */
         #loadingScreen {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100vw;
-            height: 100vh;
+            width: 100%;
+            height: 100%;
             background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%);
             display: flex;
             flex-direction: column;
@@ -1255,9 +1260,27 @@
             display: none;
         }
         .wake-retry-btn:hover { transform: scale(1.05); }
+        /* Logout button - always visible top-center */
+        #logoutBtn {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100000;
+            background: rgba(255,255,255,0.06);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            backdrop-filter: blur(6px);
+        }
+        #logoutBtn:hover { opacity: 0.95; }
     </style>
 </head>
 <body>
+    <button id="logoutBtn" style="display:none;">Logout</button>
     <!-- Server Wake-up Screen -->
     <div id="serverWakeScreen">
         <h1>TBD</h1>
@@ -2540,6 +2563,20 @@
         
         // Start wake-up on page load
         startServerWake();
+
+        // Setup logout button action once API_BASE is available
+        try {
+            const setupLogoutButton = () => {
+                const lb = document.getElementById('logoutBtn');
+                if (!lb) return;
+                lb.style.display = 'block';
+                lb.addEventListener('click', () => {
+                    try { window.location.href = API_BASE + '/logout'; } catch (e) { window.location.href = '/logout'; }
+                });
+            };
+            // If API_BASE exists now, setup immediately, otherwise wait a tick
+            if (typeof API_BASE !== 'undefined') setupLogoutButton(); else setTimeout(setupLogoutButton, 500);
+        } catch (e) {}
     </script>
     
     <script>
@@ -9241,6 +9278,23 @@
         };
         
         console.log('%c[DEV] Developer commands loaded! Type devHelp() for list of commands.', 'color: #00ff00; font-weight: bold;');
+    </script>
+    <script>
+    (function(){
+        function initLogout(){
+            const btn = document.getElementById('logoutBtn');
+            if(!btn) return;
+            const apiBase = (typeof API_BASE !== 'undefined' && API_BASE) ? API_BASE : (window.API_BASE || '');
+            btn.style.display = 'block';
+            btn.addEventListener('click', function(){
+                const base = apiBase.replace(/\/$/, '');
+                const url = base ? base + '/logout' : '/logout';
+                window.location.href = url;
+            });
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initLogout);
+        else initLogout();
+    })();
     </script>
 </body>
 </html>
