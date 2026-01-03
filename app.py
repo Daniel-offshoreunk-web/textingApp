@@ -437,14 +437,18 @@ def search_users():
         return jsonify({'error': 'Not authenticated'}), 401
     
     query = request.args.get('q', '').strip().lower()
-    if len(query) < 2:
-        return jsonify([])
     
     # Search users by username (exclude current user)
-    found_users = users.find({
-        'username': {'$regex': query, '$options': 'i'},
-        '_id': {'$ne': ObjectId(user_id)}
-    }).limit(10)
+    if query:
+        found_users = users.find({
+            'username': {'$regex': query, '$options': 'i'},
+            '_id': {'$ne': ObjectId(user_id)}
+        }).limit(10)
+    else:
+        # If no query, return all users (up to 20)
+        found_users = users.find({
+            '_id': {'$ne': ObjectId(user_id)}
+        }).limit(20)
     
     return jsonify([{
         'id': str(u['_id']),

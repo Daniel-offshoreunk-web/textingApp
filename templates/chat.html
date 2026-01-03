@@ -516,12 +516,8 @@
         const searchInput = document.getElementById('searchInput');
         const searchResults = document.getElementById('searchResults');
         
-        searchInput.addEventListener('input', async (e) => {
-            const query = e.target.value.trim();
-            if (query.length < 2) {
-                searchResults.classList.remove('active');
-                return;
-            }
+        async function doUserSearch() {
+            const query = searchInput.value.trim();
             
             try {
                 const res = await fetch(`/api/search_users?q=${encodeURIComponent(query)}`);
@@ -545,7 +541,10 @@
             } catch (err) {
                 console.error('Search error:', err);
             }
-        });
+        }
+        
+        searchInput.addEventListener('input', doUserSearch);
+        searchInput.addEventListener('focus', doUserSearch);
         
         document.addEventListener('click', (e) => {
             if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {

@@ -1000,12 +1000,8 @@
             const input = document.getElementById('searchInput');
             const results = document.getElementById('searchResults');
             
-            input.addEventListener('input', async () => {
+            async function doSearch() {
                 const query = input.value.trim();
-                if (query.length < 2) {
-                    results.classList.remove('active');
-                    return;
-                }
                 
                 try {
                     const res = await fetch(`${API_BASE}/api/search_users?q=${encodeURIComponent(query)}&user_id=${currentUser.id}`, {
@@ -1030,7 +1026,10 @@
                 } catch (err) {
                     console.error('Search error:', err);
                 }
-            });
+            }
+            
+            input.addEventListener('input', doSearch);
+            input.addEventListener('focus', doSearch);
             
             document.addEventListener('click', (e) => {
                 if (!input.contains(e.target) && !results.contains(e.target)) {
