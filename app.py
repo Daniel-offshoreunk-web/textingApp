@@ -71,6 +71,7 @@ db = client['textingapp']
 users = db.users
 messages = db.messages
 conversations = db.conversations
+game_saves = db.game_saves  # For Combat Arena game saves
 
 bcrypt = Bcrypt(app)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
@@ -421,6 +422,83 @@ def logout():
     session.clear()
     return redirect(url_for('index'))
 
+# ==================== API AUTH ENDPOINTS (for game) ====================
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    """API login for game clients"""
+    data = request.get_json()
+    username = data.get('username', '').strip().lower()
+    password = data.get('password', '')
+    
+    user = users.find_one({'username': username})
+    
+    if user and bcrypt.check_password_hash(user['password'], password):
+        session['user_id'] = str(user['_id'])
+        session['username'] = user['username']
+        session['display_name'] = user['display_name']
+        return jsonify({
+            'success': True,
+            'user_id': str(user['_id']),
+            'username': user['username'],
+            'display_name': user['display_name']
+        })
+    
+    return jsonify({'success': False, 'error': 'Invalid username or password'}), 401
+
+@app.route('/api/register', methods=['POST'])
+def api_register():
+    """API register for game clients"""
+    data = request.get_json()
+    username = data.get('username', '').strip().lower()
+    display_name = data.get('display_name', '').strip()
+    email = data.get('email', '').strip().lower()
+    password = data.get('password', '')
+    
+    # Validation
+    if not username or not display_name or not email or not password:
+        return jsonify({'success': False, 'error': 'All fields are required'}), 400
+    
+    if len(username) < 3:
+        return jsonify({'success': False, 'error': 'Username must be at least 3 characters'}), 400
+    
+    if len(password) < 6:
+        return jsonify({'success': False, 'error': 'Password must be at least 6 characters'}), 400
+    
+    # Check if username or email already exists
+    if users.find_one({'username': username}):
+        return jsonify({'success': False, 'error': 'Username already taken'}), 400
+    
+    if users.find_one({'email': email}):
+        return jsonify({'success': False, 'error': 'Email already registered'}), 400
+    
+    # Create user
+    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+    deactivate_token = secrets.token_urlsafe(32)
+    
+    user_doc = {
+        'username': username,
+        'display_name': display_name,
+        'email': email,
+        'password': hashed_password,
+        'deactivate_token': deactivate_token,
+        'verified': True,  # Auto-verify for game
+        'created_at': datetime.now(UTC)
+    }
+    
+    result = users.insert_one(user_doc)
+    user_id = str(result.inserted_id)
+    
+    session['user_id'] = user_id
+    session['username'] = username
+    session['display_name'] = display_name
+    
+    return jsonify({
+        'success': True,
+        'user_id': user_id,
+        'username': username,
+        'display_name': display_name
+    })
+
 @app.route('/chat')
 def chat():
     if 'user_id' not in session:
@@ -428,6 +506,11 @@ def chat():
     return render_template('chat.html', 
                          username=session['username'],
                          display_name=session['display_name'])
+
+@app.route('/game')
+def game():
+    """Serve the Combat Arena game"""
+    return render_template('game.html')
 
 @app.route('/api/search_users')
 def search_users():
@@ -747,6 +830,97 @@ def handle_typing(data):
                 'user_id': user_id,
                 'username': display_name
             }, room=conversation_id, include_self=False)
+
+# ==================== COMBAT ARENA GAME API ====================
+
+@app.route('/api/game/save', methods=['POST'])
+def save_game():
+    """Save game state for a user"""
+    data = request.get_json()
+    user_id = session.get('user_id') or data.get('user_id')
+    
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    game_data = data.get('game_data', {})
+    
+    # Upsert game save (one save per user)
+    game_saves.update_one(
+        {'user_id': user_id},
+        {
+            '$set': {
+                'user_id': user_id,
+                'game_data': game_data,
+                'updated_at': datetime.now(UTC)
+            },
+            '$setOnInsert': {
+                'created_at': datetime.now(UTC)
+            }
+        },
+        upsert=True
+    )
+    
+    return jsonify({'success': True, 'message': 'Game saved'})
+
+@app.route('/api/game/load')
+def load_game():
+    """Load game state for a user"""
+    user_id = session.get('user_id') or request.args.get('user_id')
+    
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    save = game_saves.find_one({'user_id': user_id})
+    
+    if save:
+        return jsonify({
+            'success': True,
+            'game_data': save.get('game_data', {}),
+            'updated_at': save.get('updated_at').isoformat() if save.get('updated_at') else None
+        })
+    else:
+        return jsonify({
+            'success': True,
+            'game_data': None,
+            'message': 'No save found'
+        })
+
+@app.route('/api/game/delete', methods=['POST'])
+def delete_game_save():
+    """Delete game save for a user"""
+    data = request.get_json() or {}
+    user_id = session.get('user_id') or data.get('user_id')
+    
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    result = game_saves.delete_one({'user_id': user_id})
+    
+    return jsonify({
+        'success': True,
+        'deleted': result.deleted_count > 0
+    })
+
+@app.route('/api/game/leaderboard')
+def get_leaderboard():
+    """Get top players by highest wave reached"""
+    # Get top 50 saves by highest wave
+    top_saves = game_saves.find({
+        'game_data.highestWaveReached': {'$exists': True}
+    }).sort('game_data.highestWaveReached', -1).limit(50)
+    
+    leaderboard = []
+    for save in top_saves:
+        user = users.find_one({'_id': ObjectId(save['user_id'])})
+        if user:
+            leaderboard.append({
+                'display_name': user.get('display_name', 'Unknown'),
+                'highest_wave': save.get('game_data', {}).get('highestWaveReached', 1),
+                'coins': save.get('game_data', {}).get('coins', 0),
+                'total_kills': save.get('game_data', {}).get('totalKills', 0)
+            })
+    
+    return jsonify(leaderboard)
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True, use_reloader=False)
