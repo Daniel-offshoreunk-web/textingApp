@@ -888,13 +888,14 @@
                     const controller = new AbortController();
                     const timeout = setTimeout(() => controller.abort(), 8000);
                     
-                    const res = await fetch(`${API_BASE}/api/conversations`, {
+                    // Use health endpoint without credentials for iframe CORS compatibility
+                    const res = await fetch(`${API_BASE}/api/health`, {
                         signal: controller.signal,
-                        credentials: 'include'
+                        mode: 'cors'
                     });
                     clearTimeout(timeout);
                     
-                    if (res.ok || res.status === 401) {
+                    if (res.ok) {
                         serverReady = true;
                         clearInterval(progressInterval);
                         progressBar.style.width = '100%';

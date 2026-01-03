@@ -89,6 +89,11 @@ def index():
         return redirect(url_for('chat'))
     return render_template('index.html')
 
+# Health check endpoint for server wake-up (no auth required)
+@app.route('/api/health')
+def health_check():
+    return jsonify({'status': 'ok', 'message': 'Server is running'})
+
 # Helper function to send welcome/notification email (non-blocking)
 def send_welcome_email(email, display_name, username, deactivate_token):
     # Use app context for background thread
