@@ -152,6 +152,20 @@
         /* Make the document iframe-friendly: allow scrolling and full-size percent-based containers */
         html, body { height: 100%; width: 100%; overflow: auto !important; position: relative; -webkit-overflow-scrolling: touch; }
 
+        /* ========== HOLLOW NEON THEME - CORE VARIABLES ========== */
+        :root {
+            --neon-cyan: #00f5ff;
+            --neon-magenta: #ff00ff;
+            --neon-green: #00ff88;
+            --neon-yellow: #ffff00;
+            --neon-red: #ff3366;
+            --bg-dark: #0a0a12;
+            --bg-darker: #050508;
+            --bg-card: rgba(10, 10, 18, 0.85);
+            --border-glow: 0 0 10px currentColor, 0 0 20px currentColor;
+            --text-glow: 0 0 8px currentColor;
+        }
+
         /* Loading Screen */
         #loadingScreen {
             position: fixed;
@@ -159,7 +173,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%);
+            background: var(--bg-dark);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -173,73 +187,70 @@
             pointer-events: none;
         }
         #loadingScreen h1 {
-            color: #4ade80;
+            color: var(--neon-cyan);
             font-size: 48px;
             margin-bottom: 30px;
-            text-shadow: 0 0 20px rgba(74, 222, 128, 0.5);
+            text-shadow: var(--text-glow);
             letter-spacing: 8px;
+            font-weight: 300;
         }
         #loadingBarContainer {
             width: 300px;
-            height: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
+            height: 4px;
+            background: transparent;
+            border-radius: 2px;
             overflow: hidden;
-            border: 2px solid rgba(74, 222, 128, 0.3);
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(0, 245, 255, 0.3);
         }
         #loadingBar {
             width: 0%;
             height: 100%;
-            background: linear-gradient(90deg, #4ade80, #22d3ee);
-            border-radius: 8px;
+            background: var(--neon-cyan);
+            border-radius: 2px;
             transition: width 0.3s ease;
-            box-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
+            box-shadow: 0 0 10px var(--neon-cyan);
         }
         #loadingText {
-            color: rgba(255, 255, 255, 0.7);
+            color: rgba(255, 255, 255, 0.5);
             margin-top: 15px;
-            font-size: 14px;
-            letter-spacing: 2px;
+            font-size: 12px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
         }
         
-        /* Custom Scrollbar Styling */
+        /* Custom Scrollbar Styling - Neon */
         ::-webkit-scrollbar {
-            width: 12px;
-            height: 12px;
+            width: 8px;
+            height: 8px;
         }
         
         ::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 10px;
-            border: 1px solid rgba(74, 222, 128, 0.1);
+            background: transparent;
         }
         
         ::-webkit-scrollbar-thumb {
-            background: linear-gradient(180deg, rgba(74, 222, 128, 0.6), rgba(74, 222, 128, 0.4));
-            border-radius: 10px;
-            border: 2px solid rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
+            background: transparent;
+            border: 1px solid var(--neon-cyan);
+            border-radius: 4px;
+            box-shadow: 0 0 5px var(--neon-cyan);
         }
         
         ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(180deg, rgba(74, 222, 128, 0.9), rgba(74, 222, 128, 0.7));
-            box-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
-        }
-        
-        ::-webkit-scrollbar-thumb:active {
-            background: linear-gradient(180deg, rgba(74, 222, 128, 1), rgba(74, 222, 128, 0.8));
+            background: rgba(0, 245, 255, 0.1);
+            box-shadow: 0 0 10px var(--neon-cyan);
         }
         
         ::-webkit-scrollbar-corner {
-            background: rgba(0, 0, 0, 0.3);
+            background: transparent;
         }
         
         body {
             margin: 0;
             overflow: hidden;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #1a1a2e;
+            background: var(--bg-dark);
+            color: #fff;
         }
         
         canvas {
@@ -251,31 +262,32 @@
             top: 20px;
             left: 20px;
             color: white;
-            background: rgba(0, 0, 0, 0.7);
+            background: transparent;
             backdrop-filter: blur(10px);
             padding: 15px 20px;
-            border-radius: 12px;
-            border: 2px solid rgba(255, 59, 59, 0.5);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            border: 1px solid var(--neon-red);
+            box-shadow: 0 0 15px rgba(255, 51, 102, 0.3), inset 0 0 20px rgba(255, 51, 102, 0.05);
             z-index: 1100;
         }
         
         .hp-bar-container {
             width: 200px;
-            height: 25px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
+            height: 20px;
+            background: transparent;
+            border: 1px solid var(--neon-red);
+            border-radius: 4px;
             overflow: hidden;
             margin-top: 8px;
             position: relative;
+            box-shadow: 0 0 10px rgba(255, 51, 102, 0.2);
         }
         
         .hp-bar {
             height: 100%;
-            background: linear-gradient(90deg, #ff3b3b 0%, #ff6b6b 100%);
+            background: var(--neon-red);
             transition: width 0.3s ease;
-            box-shadow: 0 0 10px rgba(255, 59, 59, 0.6);
+            box-shadow: 0 0 15px var(--neon-red);
         }
         
         .hp-text {
@@ -284,12 +296,12 @@
             left: 50%;
             transform: translate(-50%, -50%);
             font-weight: bold;
-            font-size: 12px;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            font-size: 11px;
+            text-shadow: 0 0 5px #000;
+            letter-spacing: 1px;
         }
         
-        /* Desktop ability bar kept in DOM for keyboard users, but hidden visually
-           so mobile players only see the mobile buttons as the ability indicators. */
+        /* Desktop ability bar */
         #abilities {
             position: absolute;
             bottom: 30px;
@@ -304,10 +316,10 @@
         .ability {
             width: 70px;
             height: 70px;
-            background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.6));
+            background: transparent;
             backdrop-filter: blur(10px);
-            border: 2px solid rgba(74, 222, 128, 0.5);
-            border-radius: 12px;
+            border: 1px solid var(--neon-green);
+            border-radius: 8px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -316,7 +328,7 @@
             transition: all 0.2s ease;
             position: relative;
             overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.2), inset 0 0 20px rgba(0, 255, 136, 0.03);
         }
         
         .ability::before {
@@ -326,7 +338,7 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(74, 222, 128, 0.3), transparent);
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.2), transparent);
             transition: left 0.5s;
         }
         
@@ -335,43 +347,45 @@
         }
         
         .ability:hover:not(.disabled) {
-            border-color: rgba(74, 222, 128, 1);
-            box-shadow: 0 0 30px rgba(74, 222, 128, 0.6), 0 4px 15px rgba(0, 0, 0, 0.3);
-            transform: scale(1.05);
+            border-color: var(--neon-green);
+            box-shadow: 0 0 25px var(--neon-green), inset 0 0 20px rgba(0, 255, 136, 0.1);
         }
         
         .ability:active:not(.disabled) {
-            transform: scale(1.02);
+            transform: scale(0.98);
         }
         
         .ability.disabled {
-            opacity: 0.5;
+            opacity: 0.3;
             cursor: not-allowed;
-            border-color: rgba(100, 100, 100, 0.5);
+            border-color: rgba(100, 100, 100, 0.3);
         }
         
         .ability-icon {
             font-size: 16px;
             margin-bottom: 5px;
             font-weight: bold;
-            color: #4ade80;
+            color: var(--neon-green);
+            text-shadow: 0 0 10px var(--neon-green);
         }
 
         /* Enemy HP UI (screen-space DOM) */
         #enemyHpLayer { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
         .enemy-hp { position: absolute; transform: translate(-50%, -100%); pointer-events: none; font-family: inherit; }
-        .enemy-hp .bar-bg { width: 100%; height: 12px; background: rgba(0,0,0,0.6); border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); overflow: hidden; }
-        .enemy-hp .bar-fg { height: 100%; width: 100%; background: linear-gradient(90deg,#4ade80,#22c55e); transform-origin: left center; transition: width 120ms linear; }
-        /* Ally HP UI (screen-space DOM) */
+        .enemy-hp .bar-bg { width: 100%; height: 8px; background: transparent; border-radius: 4px; border: 1px solid var(--neon-green); overflow: hidden; }
+        .enemy-hp .bar-fg { height: 100%; width: 100%; background: var(--neon-green); transform-origin: left center; transition: width 120ms linear; box-shadow: 0 0 8px var(--neon-green); }
+        
+        /* Ally HP UI */
         #allyHpLayer { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
         .ally-hp { position: absolute; transform: translate(-50%, -100%); pointer-events: none; font-family: inherit; }
-        .ally-hp .bar-bg { width: 100%; height: 10px; background: rgba(0,0,0,0.6); border-radius: 6px; border: 1px solid rgba(59,130,246,0.3); overflow: hidden; }
-        .ally-hp .bar-fg { height: 100%; width: 100%; background: linear-gradient(90deg,#3b82f6,#2563eb); transform-origin: left center; transition: width 120ms linear; }
+        .ally-hp .bar-bg { width: 100%; height: 6px; background: transparent; border-radius: 3px; border: 1px solid var(--neon-cyan); overflow: hidden; }
+        .ally-hp .bar-fg { height: 100%; width: 100%; background: var(--neon-cyan); transform-origin: left center; transition: width 120ms linear; box-shadow: 0 0 8px var(--neon-cyan); }
         
         .ability-key {
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.7);
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.5);
             font-weight: bold;
+            letter-spacing: 1px;
         }
         
         .cooldown-overlay {
@@ -379,7 +393,7 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.8);
             transition: height 0.1s linear;
             height: 0;
         }
@@ -392,7 +406,7 @@
             font-size: 18px;
             font-weight: bold;
             color: white;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            text-shadow: 0 0 10px #000;
         }
         
         #score {
@@ -400,14 +414,15 @@
             top: 20px;
             right: 20px;
             color: white;
-            background: rgba(0, 0, 0, 0.7);
+            background: transparent;
             backdrop-filter: blur(10px);
             padding: 15px 20px;
-            border-radius: 12px;
-            border: 2px solid rgba(74, 222, 128, 0.5);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
-            font-size: 18px;
-            font-weight: bold;
+            border-radius: 8px;
+            border: 1px solid var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(0, 245, 255, 0.2), inset 0 0 20px rgba(0, 245, 255, 0.03);
+            font-size: 16px;
+            font-weight: 300;
+            letter-spacing: 2px;
         }
         
         #gameOver {
@@ -416,12 +431,12 @@
             left: 50%;
             transform: translate(-50%, -50%);
             color: white;
-            background: rgba(0, 0, 0, 0.9);
+            background: var(--bg-card);
             backdrop-filter: blur(20px);
             padding: 40px 60px;
-            border-radius: 20px;
-            border: 3px solid rgba(255, 59, 59, 0.8);
-            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            border-radius: 12px;
+            border: 1px solid var(--neon-red);
+            box-shadow: 0 0 40px rgba(255, 51, 102, 0.3);
             text-align: center;
             display: none;
             z-index: 100;
@@ -429,25 +444,30 @@
         
         #gameOver h1 {
             margin: 0 0 20px 0;
-            font-size: 48px;
-            color: #ff3b3b;
+            font-size: 42px;
+            color: var(--neon-red);
+            text-shadow: 0 0 20px var(--neon-red);
+            font-weight: 300;
+            letter-spacing: 8px;
         }
         
         #gameOver button {
             margin-top: 20px;
             padding: 12px 30px;
-            font-size: 18px;
-            background: rgba(74, 222, 128, 0.3);
-            border: 2px solid rgba(74, 222, 128, 0.8);
-            color: white;
-            border-radius: 8px;
+            font-size: 16px;
+            background: transparent;
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            border-radius: 4px;
             cursor: pointer;
             transition: all 0.2s ease;
+            letter-spacing: 2px;
+            text-transform: uppercase;
         }
         
         #gameOver button:hover {
-            background: rgba(74, 222, 128, 0.5);
-            box-shadow: 0 0 20px rgba(74, 222, 128, 0.5);
+            background: rgba(0, 245, 255, 0.1);
+            box-shadow: 0 0 20px rgba(0, 245, 255, 0.3);
         }
         
         #homeScreen {
@@ -456,7 +476,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.95);
+            background: var(--bg-dark);
             backdrop-filter: blur(20px);
             display: flex;
             flex-direction: column;
@@ -466,37 +486,35 @@
         }
 
         #homeScreen h1 {
-            color: white;
-            font-size: 72px;
+            color: var(--neon-cyan);
+            font-size: 64px;
             margin-bottom: 60px;
-            text-shadow: 0 0 40px rgba(74, 222, 128, 0.8);
-            font-weight: bold;
-            letter-spacing: 8px;
+            text-shadow: 0 0 30px var(--neon-cyan), 0 0 60px rgba(0, 245, 255, 0.3);
+            font-weight: 200;
+            letter-spacing: 12px;
         }
 
-        /* Home / Play / Select shared pill button style */
+        /* ========== HOLLOW NEON BUTTONS ========== */
         #playButton, #selectButton, #homeButton, #summonHomeButton, .home-action {
-            padding: 18px 48px;
-            font-size: 20px;
-            font-weight: 800;
-            border-radius: 16px;
-            border: 0;
-            color: white;
+            padding: 16px 48px;
+            font-size: 16px;
+            font-weight: 400;
+            border-radius: 4px;
+            background: transparent;
             cursor: pointer;
-            transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.12s ease;
-            box-shadow: 0 14px 34px -10px rgba(6,7,20,0.6), inset 0 -2px 8px rgba(255,255,255,0.03);
-            backdrop-filter: blur(4px);
-            text-shadow: 0 1px 6px rgba(0,0,0,0.25);
-            min-width: 260px;
+            transition: all 0.2s ease;
+            min-width: 220px;
             text-align: center;
+            letter-spacing: 3px;
+            text-transform: uppercase;
         }
 
-        /* Home buttons grid (2x2 on wide, 1 column on narrow) */
+        /* Home buttons grid */
         .home-buttons {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 18px;
-            max-width: 720px;
+            gap: 16px;
+            max-width: 600px;
             margin: 0 auto;
             align-items: center;
             justify-items: center;
@@ -510,35 +528,53 @@
             padding-right: 28px;
         }
         @media (max-width: 720px) {
-            .home-buttons { grid-template-columns: 1fr; max-width: 360px; }
-            #playButton { font-size: 24px; padding: 18px 28px; }
-            #playButton, #selectButton, #summonHomeButton, #eventsHomeButton { border-radius: 12px; }
+            .home-buttons { grid-template-columns: 1fr; max-width: 320px; }
+            #playButton { font-size: 18px; padding: 14px 24px; }
         }
 
-        /* Play button green */
+        /* Play button - hollow neon cyan */
         #playButton {
-            background: linear-gradient(90deg, #3fe1a4 0%, #2cc6f2 100%);
-            color: #071122;
-            padding: 22px 64px;
-            font-size: 28px;
-        }
-        .home-action {
-            background: linear-gradient(90deg, #eef2ff 0%, #e0f2fe 100%);
-            color: #071122;
+            background: transparent;
+            color: var(--neon-cyan);
+            border: 1px solid var(--neon-cyan);
             padding: 18px 48px;
-            font-weight: 800;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            font-size: 18px;
+            box-shadow: 0 0 20px rgba(0, 245, 255, 0.2), inset 0 0 20px rgba(0, 245, 255, 0.03);
         }
-        .home-action:hover { transform: translateY(-3px); }
-        /* Make Summon button match the main Select button gradient for consistency */
+        #playButton:hover {
+            background: rgba(0, 245, 255, 0.1);
+            box-shadow: 0 0 30px var(--neon-cyan), inset 0 0 20px rgba(0, 245, 255, 0.1);
+            transform: none;
+        }
+        #playButton:focus { outline: 1px solid var(--neon-cyan); outline-offset: 4px; }
+
+        /* Home action buttons - hollow neon magenta */
+        .home-action {
+            background: transparent;
+            color: var(--neon-magenta);
+            border: 1px solid var(--neon-magenta);
+            padding: 14px 36px;
+            font-weight: 400;
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.15);
+        }
+        .home-action:hover {
+            background: rgba(255, 0, 255, 0.1);
+            box-shadow: 0 0 25px var(--neon-magenta);
+            transform: none;
+        }
+
+        /* Summon button - hollow neon green */
         #summonHomeButton.home-action {
-            background: linear-gradient(90deg, #60a5fa 0%, #7c3aed 100%);
-            color: #081827 !important;
-            text-shadow: none !important;
-            border: 0;
+            background: transparent;
+            color: var(--neon-green) !important;
+            border: 1px solid var(--neon-green);
+            text-shadow: 0 0 10px var(--neon-green) !important;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.15);
         }
-        #playButton:hover { transform: translateY(-4px); box-shadow: 0 22px 48px -18px rgba(44,211,238,0.25); }
-        #playButton:focus { outline: 3px solid rgba(44,211,238,0.18); outline-offset: 3px; }
+        #summonHomeButton.home-action:hover {
+            background: rgba(0, 255, 136, 0.1);
+            box-shadow: 0 0 25px var(--neon-green);
+        }
 
         #classSelection {
             position: absolute;
@@ -546,31 +582,30 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #181a2b 0%, #1a1a2e 60%, #2e1065 100%);
+            background: var(--bg-dark);
             backdrop-filter: blur(20px);
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start; /* align to top so cards aren't clipped */
+            justify-content: flex-start;
             padding-top: 40px;
             z-index: 200;
         }
         
         #classSelection h1 {
-            color: #fff;
-            font-size: 38px;
+            color: var(--neon-cyan);
+            font-size: 32px;
             margin-bottom: 20px;
-            background: linear-gradient(90deg, #4ade80 0%, #22d3ee 40%, #a78bfa 80%, #f472b6 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-shadow: 0 0 24px #fff6, 0 0 8px #4ade80a0;
+            text-shadow: 0 0 20px var(--neon-cyan);
+            font-weight: 300;
+            letter-spacing: 6px;
+            text-transform: uppercase;
         }
         
         /* Thin scrollbars for page and containers */
         html, body, .class-container {
-            scrollbar-width: thin; /* Firefox */
-            scrollbar-color: rgba(255,255,255,0.12) transparent;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0, 245, 255, 0.3) transparent;
         }
 
         /* WebKit browsers */
@@ -596,76 +631,78 @@
             flex-direction: row;
             gap: 20px;
             max-width: 96vw;
-            height: calc(80vh - 120px); /* fixed height so cards can size to container */
+            height: calc(80vh - 120px);
             overflow-x: auto;
-            overflow-y: hidden; /* no vertical scrolling on container */
-            align-items: stretch; /* ensure all cards share the same height */
-            padding: 12px 20px 20px 20px; /* bottom padding so card bottoms aren't clipped */
+            overflow-y: hidden;
+            align-items: stretch;
+            padding: 12px 20px 20px 20px;
             -webkit-overflow-scrolling: touch;
             scroll-snap-type: x mandatory;
         }
         
+        /* ========== CLASS CARDS - HOLLOW NEON ========== */
         .class-card {
             display: flex;
             flex-direction: row;
             align-items: flex-start;
             gap: 16px;
-            flex: 0 0 380px; /* slightly narrower cards to fit without vertical overflow */
-            width: 380px;
-            min-width: 320px;
-            height: 100%; /* stretch to container height so bottoms are visible */
-            min-height: 320px;
+            flex: 0 0 360px;
+            width: 360px;
+            min-width: 300px;
+            height: 100%;
+            min-height: 300px;
             scroll-snap-align: start;
-            padding: 14px; /* reduce padding so card content fits vertically */
+            padding: 16px;
             position: relative;
-            background: linear-gradient(120deg, #232946 0%, #2e1065 100%);
+            background: transparent;
             backdrop-filter: blur(10px);
-            border-radius: 15px;
+            border-radius: 8px;
             color: white;
             cursor: pointer;
-            transition: box-shadow 0.3s, border-color 0.3s, transform 0.18s cubic-bezier(.4,1.3,.6,1);
-            box-shadow: 0 0 24px #4ade8033, 0 2px 16px #0008;
+            transition: all 0.3s ease;
             overflow: hidden;
-            background-clip: padding-box;
-            isolation: isolate;
-            border: 2px solid #a78bfa;
+            border: 1px solid var(--neon-cyan);
+            box-shadow: 0 0 20px rgba(0, 245, 255, 0.15), inset 0 0 30px rgba(0, 245, 255, 0.02);
             z-index: 0;
         }
 
-        /* Make right column scroll internally if content overflows the fixed card height */
         .card-right {
             overflow-y: auto;
-            padding-right: 6px; /* room for scrollbar */
+            padding-right: 6px;
         }
 
-        /* Small custom scrollbar for card internals */
-        .card-right::-webkit-scrollbar { width: 8px; }
+        .card-right::-webkit-scrollbar { width: 6px; }
         .card-right::-webkit-scrollbar-track { background: transparent; }
-        .card-right::-webkit-scrollbar-thumb { background: rgba(167,139,250,0.14); border-radius: 6px; }
+        .card-right::-webkit-scrollbar-thumb { background: rgba(0, 245, 255, 0.2); border-radius: 3px; }
+        
         .class-card::before {
             content: none;
         }
         .class-card:hover {
-            /* keep visual emphasis without scaling */
-            box-shadow: 0 0 32px #a78bfa88, 0 6px 30px rgba(0,0,0,0.45);
-            border-color: #f472b6;
+            border-color: var(--neon-magenta);
+            box-shadow: 0 0 30px rgba(255, 0, 255, 0.3), inset 0 0 30px rgba(255, 0, 255, 0.03);
             z-index: 1;
         }
         
         .class-card h2 {
-            font-size: 24px;
+            font-size: 20px;
             margin: 0 0 10px 0;
-            text-align: center;
+            text-align: left;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan);
+            font-weight: 400;
+            letter-spacing: 2px;
         }
         
-        /* hide the large duplicate name badge inside cards; keep `.class-icon` available globally */
         .class-card .class-icon {
             display: none;
         }
         
         .class-card p {
-            font-size: 12px;
+            font-size: 11px;
             margin: 10px 0;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.5;
         }
         
         .class-card .ability-list {
@@ -680,7 +717,6 @@
             box-sizing: border-box;
         }
 
-        /* internal left/right columns inside each card */
         .card-left {
             flex: 0 0 140px;
             max-width: 140px;
@@ -695,50 +731,50 @@
             flex-direction: column;
             gap: 12px;
         }
-        .card-left h2 { font-size: 18px; margin: 0; }
-        /* keep any `.class-icon` hidden inside cards to avoid duplicate names */
+        .card-left h2 { font-size: 16px; margin: 0; color: var(--neon-cyan); text-shadow: 0 0 8px var(--neon-cyan); }
         .card-left .class-icon { display:none; }
         
         .class-card .ability-list li {
             padding: 8px;
-            background: linear-gradient(90deg, #22d3ee11 0%, #a78bfa22 100%);
+            background: transparent;
             margin-bottom: 6px;
-            border-radius: 6px;
-            border-left: 3px solid #f472b6;
-            font-size: 11px;
+            border-radius: 4px;
+            border-left: 2px solid var(--neon-magenta);
+            font-size: 10px;
             word-wrap: break-word;
             overflow-wrap: break-word;
             line-height: 1.4;
+            color: rgba(255, 255, 255, 0.7);
         }
         
         .class-card .ability-list li strong {
-            color: #f472b6;
-            text-shadow: 0 0 6px #fff6;
+            color: var(--neon-magenta);
+            text-shadow: 0 0 8px var(--neon-magenta);
         }
         
         .class-exp-container {
             margin-top: 15px;
             padding-top: 15px;
-            border-top: 1px solid rgba(74, 222, 128, 0.3);
+            border-top: 1px solid rgba(0, 245, 255, 0.2);
         }
         
         .class-exp-bar {
             width: 100%;
-            height: 20px;
-            background: linear-gradient(90deg, #232946 0%, #2e1065 100%);
-            border: 2px solid #a78bfa;
-            border-radius: 10px;
+            height: 16px;
+            background: transparent;
+            border: 1px solid var(--neon-green);
+            border-radius: 4px;
             overflow: hidden;
             position: relative;
             margin-top: 5px;
-            box-shadow: 0 0 8px #a78bfa44;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.15);
         }
         
         .class-exp-fill {
             height: 100%;
-            background: linear-gradient(90deg, #f472b6 0%, #a78bfa 50%, #22d3ee 100%);
+            background: var(--neon-green);
             transition: width 0.3s ease;
-            box-shadow: 0 0 10px #a78bfa99;
+            box-shadow: 0 0 10px var(--neon-green);
         }
         
         .class-exp-text {
@@ -746,18 +782,20 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 10px;
-            font-weight: bold;
+            font-size: 9px;
+            font-weight: 400;
             color: white;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            text-shadow: 0 0 5px #000;
+            letter-spacing: 1px;
         }
         
         .class-level {
-            font-size: 15px;
-            color: #a78bfa;
-            font-weight: bold;
+            font-size: 13px;
+            color: var(--neon-green);
+            font-weight: 400;
             text-align: center;
-            text-shadow: 0 0 8px #fff8;
+            text-shadow: 0 0 10px var(--neon-green);
+            letter-spacing: 2px;
         }
         
         #progressionWindow {
@@ -765,16 +803,16 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 600px;
+            width: 550px;
             max-height: 80vh;
-            background: rgba(0, 0, 0, 0.95);
+            background: var(--bg-card);
             backdrop-filter: blur(20px);
-            border: 3px solid rgba(74, 222, 128, 0.8);
-            border-radius: 20px;
+            border: 1px solid var(--neon-cyan);
+            border-radius: 8px;
             padding: 30px;
             z-index: 300;
             display: none;
-            box-shadow: 0 0 50px rgba(74, 222, 128, 0.5);
+            box-shadow: 0 0 40px rgba(0, 245, 255, 0.2);
         }
         
         #progressionContent {
@@ -784,62 +822,70 @@
         }
         
         .progression-header {
-            color: #4ade80;
-            font-size: 28px;
-            font-weight: bold;
+            color: var(--neon-cyan);
+            font-size: 24px;
+            font-weight: 400;
             text-align: center;
             margin-bottom: 20px;
-            text-shadow: 0 0 20px rgba(74, 222, 128, 0.5);
+            text-shadow: 0 0 20px var(--neon-cyan);
+            letter-spacing: 3px;
+            text-transform: uppercase;
         }
         
         .upgrade-tier {
-            background: rgba(74, 222, 128, 0.1);
-            border: 2px solid rgba(74, 222, 128, 0.3);
-            border-radius: 12px;
+            background: transparent;
+            border: 1px solid rgba(0, 245, 255, 0.3);
+            border-radius: 6px;
             padding: 15px;
             margin-bottom: 15px;
             transition: all 0.3s ease;
         }
         
         .upgrade-tier.unlocked {
-            border-color: rgba(74, 222, 128, 0.8);
-            background: rgba(74, 222, 128, 0.2);
-            box-shadow: 0 0 20px rgba(74, 222, 128, 0.3);
+            border-color: var(--neon-green);
+            background: rgba(0, 255, 136, 0.05);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.2);
         }
         
         .upgrade-tier.locked {
-            opacity: 0.5;
+            opacity: 0.4;
+            border-color: rgba(255, 255, 255, 0.1);
         }
         
         .upgrade-tier h3 {
-            color: #4ade80;
+            color: var(--neon-cyan);
             margin: 0 0 10px 0;
-            font-size: 18px;
+            font-size: 16px;
+            font-weight: 400;
+            text-shadow: 0 0 8px var(--neon-cyan);
+            letter-spacing: 1px;
         }
         
         .upgrade-tier p {
-            color: rgba(255, 255, 255, 0.9);
+            color: rgba(255, 255, 255, 0.7);
             margin: 5px 0;
-            font-size: 14px;
+            font-size: 13px;
         }
         
         .close-progression {
             position: absolute;
             top: 15px;
             right: 20px;
-            background: rgba(255, 59, 59, 0.3);
-            border: 2px solid rgba(255, 59, 59, 0.8);
-            color: white;
+            background: transparent;
+            border: 1px solid var(--neon-red);
+            color: var(--neon-red);
             padding: 8px 15px;
-            border-radius: 8px;
+            border-radius: 4px;
             cursor: pointer;
-            font-weight: bold;
+            font-weight: 400;
             transition: all 0.2s ease;
+            letter-spacing: 1px;
         }
         
         .close-progression:hover {
-            background: rgba(255, 59, 59, 0.5);
-            box-shadow: 0 0 15px rgba(255, 59, 59, 0.5);
+            background: rgba(255, 51, 102, 0.15);
+            box-shadow: 0 0 15px rgba(255, 51, 102, 0.4);
+            text-shadow: 0 0 8px var(--neon-red);
         }
         
         .class-card-btn-row {
@@ -847,58 +893,49 @@
             gap: 8px;
             margin-top: 12px;
         }
-        /* Modern pill-style buttons */
+        
         .view-progression-btn, .buy-exp-btn {
             width: 50%;
-            padding: 12px 18px;
-            font-size: 16px;
-            font-weight: 800;
-            border-radius: 14px;
-            border: 0;
+            padding: 10px 14px;
+            font-size: 12px;
+            font-weight: 400;
+            border-radius: 4px;
             box-sizing: border-box;
             cursor: pointer;
             text-align: center;
-            transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.12s ease;
+            transition: all 0.2s ease;
             min-width: 0;
             line-height: 1.1;
             display: inline-block;
-            letter-spacing: 0.6px;
-            box-shadow: 0 8px 20px -8px rgba(10,10,14,0.6), inset 0 -2px 6px rgba(255,255,255,0.03);
-            backdrop-filter: blur(4px);
+            letter-spacing: 1px;
+            text-transform: uppercase;
         }
+        
         .view-progression-btn {
-            background: linear-gradient(90deg, #3fe1a4 0%, #2cc6f2 100%);
-            color: #071122;
+            background: transparent;
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
         }
+        
         .view-progression-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 18px 40px -16px rgba(44,211,238,0.25), inset 0 -2px 8px rgba(255,255,255,0.04);
-            color: #fff;
+            background: rgba(0, 245, 255, 0.1);
+            box-shadow: 0 0 15px rgba(0, 245, 255, 0.3);
+            text-shadow: 0 0 8px var(--neon-cyan);
         }
-        .view-progression-btn:focus {
-            outline: 3px solid rgba(44,211,238,0.22);
-            outline-offset: 2px;
-        }
+        
         .buy-exp-btn {
-            background: linear-gradient(90deg, #ffd47a 0%, #ff80c4 100%);
-            color: #201525;
+            background: transparent;
+            border: 1px solid var(--neon-yellow);
+            color: var(--neon-yellow);
         }
+        
         .buy-exp-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 18px 40px -16px rgba(255,107,203,0.22), inset 0 -2px 8px rgba(255,255,255,0.04);
-            color: #fff;
+            background: rgba(255, 255, 0, 0.1);
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.3);
+            text-shadow: 0 0 8px var(--neon-yellow);
         }
-        .buy-exp-btn:focus {
-            outline: 3px solid rgba(255,107,203,0.18);
-            outline-offset: 2px;
-        }
-        /* Global colorful polish */
-        body {
-            background: radial-gradient(circle at 10% 10%, #0f172a 0%, #081827 25%, #071122 60%, #020617 100%);
-            color: #eef2ff;
-        }
-
-        /* Class cards colorful style */
+        
+        /* Class cards size variants */
         .class-card.wide-card {
             min-width: 340px;
             max-width: 520px;
@@ -909,74 +946,83 @@
         }
 
         .class-card:hover {
-            /* subtle glow only; no scale to avoid size change */
-            border-color: rgba(74, 222, 128, 0.9);
-            box-shadow: 0 14px 48px rgba(74,222,128,0.08), 0 8px 24px rgba(0,0,0,0.45);
+            border-color: var(--neon-magenta);
+            box-shadow: 0 0 25px rgba(255, 0, 255, 0.3);
         }
 
-        /* Locked class styling: default full-overlay for fully locked cards */
+        /* Locked class styling */
         .class-card.locked {
-            opacity: 0.45;
+            opacity: 0.4;
             filter: grayscale(0.8);
-            pointer-events: auto; /* allow interaction for shard unlock UI */
+            pointer-events: auto;
             position: relative;
         }
-        /* Uniform small badge for locked cards (top-right) */
+        
         .class-card.locked::after {
             content: 'LOCKED';
             position: absolute;
             top: 12px;
             right: 12px;
             transform: none;
-            font-size: 13px;
-            font-weight: 700;
-            color: #fff;
-            text-shadow: 0 0 8px rgba(0,0,0,0.7);
-            background: rgba(0,0,0,0.45);
-            padding: 6px 8px;
-            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 400;
+            color: var(--neon-red);
+            text-shadow: 0 0 8px var(--neon-red);
+            background: transparent;
+            border: 1px solid var(--neon-red);
+            padding: 4px 8px;
+            border-radius: 4px;
             z-index: 12;
+            letter-spacing: 2px;
         }
-        /* Buttons and exp container remain visible on locked cards so shard UI can be used */
-        /* If a locked card is the next one unlockable, show its buttons but keep a locked overlay */
+        
         .class-card.locked.unlockable {
-            opacity: 0.65;
-            filter: grayscale(0.6);
+            opacity: 0.6;
+            filter: grayscale(0.5);
             pointer-events: auto;
         }
         .class-card.locked.unlockable .class-card-btn-row { display: block; }
-        /* Always hide right-side exp container for locked/unlockable cards */
+        
         .class-card.locked .class-exp-container,
         .class-card.locked.unlockable .class-exp-container { display: none !important; }
 
-        /* Layout tweaks for unlockable cards: stack buttons vertically and make them full-width */
         .class-card.unlockable .class-card-btn-row { display:flex; flex-direction: column; gap:12px; align-items: stretch; }
         .class-card.unlockable .view-progression-btn,
         .class-card.unlockable .buy-exp-btn { width: 100%; }
 
-        /* Inline unlock button for a locked card (prominent, inline at bottom of card) */
         .unlock-class-btn {
-            background: linear-gradient(90deg, #ffd47a 0%, #ff80c4 100%);
-            color: #201525;
-            border-radius: 12px;
-            padding: 12px 14px;
-            font-weight: 800;
+            background: transparent;
+            border: 1px solid var(--neon-green);
+            color: var(--neon-green);
+            border-radius: 4px;
+            padding: 10px 14px;
+            font-weight: 400;
             cursor: pointer;
-            border: 0;
             width: 100%;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.45);
-            pointer-events: auto; /* allow clicking while card is otherwise disabled */
             text-align: center;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
         }
-        .unlock-class-btn.disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.05); }
+        
+        .unlock-class-btn:hover {
+            background: rgba(0, 255, 136, 0.1);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+            text-shadow: 0 0 8px var(--neon-green);
+        }
+        
+        .unlock-class-btn.disabled { 
+            opacity: 0.4; 
+            cursor: not-allowed; 
+            border-color: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.4);
+        }
 
-        /* Shard progress shown on locked class cards */
         .card-shard-progress { width: 100%; display:block; font-family: inherit; }
-        .card-shard-progress > div:first-child { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
-        .card-shard-progress .bar-bg { height:8px; background:rgba(255,255,255,0.08); border-radius:6px; overflow:hidden; }
-        .card-shard-progress .bar-fg { height:100%; width:0%; background:linear-gradient(90deg,#a78bfa,#7c3aed); transition: width 0.25s ease; }
+        .card-shard-progress > div:first-child { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; color: rgba(255, 255, 255, 0.6); }
+        .card-shard-progress .bar-bg { height:6px; background:rgba(255,255,255,0.05); border-radius:4px; overflow:hidden; border: 1px solid rgba(255, 0, 255, 0.3); }
+        .card-shard-progress .bar-fg { height:100%; width:0%; background: var(--neon-magenta); transition: width 0.25s ease; box-shadow: 0 0 8px var(--neon-magenta); }
 
-        /* Previously the right column was hidden for locked/unlockable cards; keep layout intact so shard progress displays */
         .class-card.locked .card-left,
         .class-card.locked.unlockable .card-left {
             flex: 1 1 100% !important;
@@ -985,122 +1031,98 @@
             padding-right: 18px;
         }
 
-        /* Center primary title and make left content use full width when right hidden */
         .class-card.locked .card-left h2,
         .class-card.locked.unlockable .card-left h2 { text-align: left; }
-        /* Buy next class button */
+        
         #buyNextClassBtn {
             margin-top: 18px;
-            padding: 16px 32px;
-            font-size: 18px;
-            font-weight: 800;
-            border-radius: 14px;
-            border: 0;
-            background: linear-gradient(90deg, #ffd47a 0%, #ff80c4 100%);
-            color: #071122;
+            padding: 12px 28px;
+            font-size: 14px;
+            font-weight: 400;
+            border-radius: 4px;
+            background: transparent;
+            border: 1px solid var(--neon-green);
+            color: var(--neon-green);
             cursor: pointer;
-            box-shadow: 0 8px 24px -8px rgba(255,128,196,0.4);
-            transition: transform 0.16s ease, box-shadow 0.16s ease;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
         }
         #buyNextClassBtn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 14px 36px -10px rgba(255,128,196,0.5);
+            background: rgba(0, 255, 136, 0.1);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+            text-shadow: 0 0 8px var(--neon-green);
         }
         #buyNextClassBtn:disabled {
-            opacity: 0.5;
+            opacity: 0.4;
             cursor: not-allowed;
-            transform: none;
+            border-color: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.4);
         }
 
         .class-icon {
-            font-weight: bold;
-            background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
-            padding: 8px 10px;
-            border-radius: 8px;
+            font-weight: 400;
+            background: transparent;
+            border: 1px solid var(--neon-cyan);
+            padding: 6px 10px;
+            border-radius: 4px;
             display: inline-block;
             margin-bottom: 8px;
-            color: #fff;
-            box-shadow: inset 0 -6px 16px rgba(0,0,0,0.25);
+            color: var(--neon-cyan);
+            text-shadow: 0 0 8px var(--neon-cyan);
+            letter-spacing: 1px;
         }
 
-        /* Home screen visuals */
-        #homeScreen {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            gap: 18px;
-            height: 100vh;
-            background: linear-gradient(180deg, rgba(19,21,45,0.85), rgba(6,7,20,0.95));
-            color: #fff;
-            z-index: 1000;
-        }
-
-        #playButton {
-            padding: 18px 32px;
-            font-size: 20px;
-            font-weight: 800;
-            color: #081827;
-            background: linear-gradient(90deg, #7c3aed 0%, #22d3ee 100%);
-            border: none;
-            border-radius: 14px;
-            cursor: pointer;
-            box-shadow: 0 12px 36px rgba(124,58,237,0.18), 0 6px 18px rgba(34,211,238,0.08);
-            transition: transform 0.12s ease, box-shadow 0.12s ease;
-        }
-
-        #playButton:hover {
-            transform: scale(1.03);
-            box-shadow: 0 18px 48px rgba(124,58,237,0.22), 0 8px 28px rgba(34,211,238,0.12);
-            filter: brightness(1.05) saturate(1.05);
-        }
-
-        /* Select button purple/blue */
+        /* Select button */
         #selectButton {
-            background: linear-gradient(90deg, #60a5fa 0%, #7c3aed 100%);
-            color: #081827;
+            background: transparent;
+            border: 1px solid var(--neon-magenta);
+            color: var(--neon-magenta);
+            padding: 12px 28px;
+            border-radius: 4px;
+            font-weight: 400;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
-        #selectButton:hover { transform: translateY(-3px); box-shadow: 0 18px 40px -12px rgba(96,165,250,0.22); }
-        #selectButton:focus { outline: 3px solid rgba(96,165,250,0.12); outline-offset: 3px; }
+        #selectButton:hover { 
+            background: rgba(255, 0, 255, 0.1);
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.3);
+            text-shadow: 0 0 10px var(--neon-magenta);
+        }
 
-        /* HUD Home button (accent) */
+        /* HUD Home button */
         #homeButton {
-            display: none; /* Hidden on the home screen by default */
+            display: none;
             position: absolute;
             top: 18px;
-            right: 18px; /* restored to top-right */
+            right: 18px;
             left: auto;
             z-index: 1200;
-            padding: 10px 14px; /* reduced padding to make button less wide */
-            background: linear-gradient(90deg, #ff7b7b 0%, #ffb86b 100%);
-            color: #071122;
-            border-radius: 10px;
-            font-weight: 700;
-            min-width: unset !important; /* override global min-width so button isn't excessively wide */
+            padding: 8px 14px;
+            background: transparent;
+            border: 1px solid var(--neon-red);
+            color: var(--neon-red);
+            border-radius: 4px;
+            font-weight: 400;
+            letter-spacing: 1px;
+            min-width: unset !important;
+            transition: all 0.2s ease;
         }
-        #homeButton:hover { transform: translateY(-2px); box-shadow: 0 14px 36px -12px rgba(255,107,107,0.22); }
-        #homeButton:focus { outline: 3px solid rgba(255,107,107,0.12); outline-offset: 2px; }
+        #homeButton:hover { 
+            background: rgba(255, 51, 102, 0.1);
+            box-shadow: 0 0 15px rgba(255, 51, 102, 0.3);
+            text-shadow: 0 0 8px var(--neon-red);
+        }
 
         /* Abilities color variants */
-        .ability .ability-icon { color: #e6fffa; }
-        #ability1 { border-image-slice: 1; border-image-source: linear-gradient(90deg,#f43f5e,#fb7185); }
-        #ability2 { border-image-slice: 1; border-image-source: linear-gradient(90deg,#60a5fa,#7c3aed); }
-        #ability3 { border-image-slice: 1; border-image-source: linear-gradient(90deg,#34d399,#06b6d4); }
+        .ability .ability-icon { color: var(--neon-cyan); }
+        #ability1 { border-color: var(--neon-red); }
+        #ability2 { border-color: var(--neon-magenta); }
+        #ability3 { border-color: var(--neon-green); }
 
-        /* Game over style */
-        #gameOver { 
-            display: none; 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            background: linear-gradient(135deg, rgba(12,12,32,0.95), rgba(4,4,10,0.95));
-            padding: 28px; border-radius: 14px; border: 2px solid rgba(255,59,59,0.24); z-index: 1500; text-align:center;
-            color: #fff;
-        }
-        #gameOver button { padding: 10px 18px; border-radius: 10px; background: linear-gradient(90deg,#f97316,#fb923c); border:none; font-weight:bold; cursor:pointer; }
-
-        /* Progression window polish */
-        #progressionWindow { background: linear-gradient(180deg, rgba(2,6,23,0.95), rgba(6,7,20,0.95)); border: 2px solid rgba(124,58,237,0.12); box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
-
-        /* Top-right widget container (coins / home) */
+        /* Top-right widget container */
         #widgetContainer {
             position: fixed;
             top: 18px;
@@ -1112,48 +1134,57 @@
             pointer-events: auto;
         }
 
-        /* Generic widget styling */
         .widget {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 10px 14px;
-            border-radius: 14px;
+            padding: 8px 14px;
+            border-radius: 4px;
             min-width: 64px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.45);
-            font-weight: 800;
-            color: #071122;
+            font-weight: 400;
+            letter-spacing: 1px;
         }
 
         .widget-coins {
-            background: rgba(255,255,255,0.03);
-            color: #ddd;
+            background: transparent;
+            border: 1px solid var(--neon-yellow);
+            color: var(--neon-yellow);
             flex-direction: column;
             align-items: flex-start;
             padding: 8px 12px;
-            box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+            box-shadow: 0 0 10px rgba(255, 255, 0, 0.15);
         }
 
         .widget-coins .coin-main {
-            font-size: 16px;
+            font-size: 14px;
             line-height: 1;
-            color: #e6e6e6;
-            text-shadow: none;
+            color: var(--neon-yellow);
+            text-shadow: 0 0 8px var(--neon-yellow);
         }
         .widget-coins .coin-label {
-            font-size: 12px;
-            color: rgba(255,255,255,0.75);
+            font-size: 10px;
+            color: rgba(255, 255, 0, 0.7);
             opacity: 0.9;
             margin-top: 2px;
+            letter-spacing: 1px;
         }
 
         .widget-home {
-            background: linear-gradient(90deg, #ff7b7b 0%, #ffb86b 100%);
-            color: #071122;
+            background: transparent;
+            border: 1px solid var(--neon-red);
+            color: var(--neon-red);
             padding: 8px 10px;
-            font-size: 14px;
-            border-radius: 12px;
+            font-size: 12px;
+            border-radius: 4px;
             min-width: 0;
+            letter-spacing: 1px;
+            transition: all 0.2s ease;
+        }
+        
+        .widget-home:hover {
+            background: rgba(255, 51, 102, 0.1);
+            box-shadow: 0 0 15px rgba(255, 51, 102, 0.3);
+            text-shadow: 0 0 8px var(--neon-red);
         }
 
         /* Ensure existing absolute styles don't conflict once moved into container */
@@ -1166,7 +1197,7 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%);
+            background: var(--bg-darker);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -1175,19 +1206,22 @@
         }
         #authScreen.hidden { display: none; }
         #authScreen h1 {
-            color: #4ade80;
-            font-size: 48px;
+            color: var(--neon-cyan);
+            font-size: 36px;
             margin-bottom: 30px;
-            text-shadow: 0 0 20px rgba(74, 222, 128, 0.5);
+            text-shadow: 0 0 30px var(--neon-cyan);
             letter-spacing: 8px;
+            font-weight: 300;
+            text-transform: uppercase;
         }
         .auth-container {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(74, 222, 128, 0.3);
-            border-radius: 15px;
+            background: var(--bg-card);
+            border: 1px solid var(--neon-cyan);
+            border-radius: 8px;
             padding: 2rem;
             width: 350px;
             max-width: 90%;
+            box-shadow: 0 0 30px rgba(0, 245, 255, 0.15);
         }
         .auth-tabs {
             display: flex;
@@ -1197,18 +1231,27 @@
         .auth-tab {
             flex: 1;
             padding: 0.75rem;
-            background: rgba(255,255,255,0.1);
-            border: none;
-            border-radius: 8px;
-            color: #aaa;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            color: rgba(255, 255, 255, 0.5);
             cursor: pointer;
-            font-size: 1rem;
+            font-size: 12px;
             transition: all 0.2s;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .auth-tab:hover {
+            border-color: rgba(255, 255, 255, 0.4);
+            color: rgba(255, 255, 255, 0.8);
         }
         .auth-tab.active {
-            background: linear-gradient(135deg, #4ade80 0%, #22d3ee 100%);
-            color: #1a1a2e;
-            font-weight: bold;
+            background: transparent;
+            border-color: var(--neon-cyan);
+            color: var(--neon-cyan);
+            font-weight: 400;
+            box-shadow: 0 0 10px rgba(0, 245, 255, 0.2);
+            text-shadow: 0 0 8px var(--neon-cyan);
         }
         .auth-form { display: none; }
         .auth-form.active { display: block; }
@@ -1216,77 +1259,106 @@
             width: 100%;
             padding: 0.875rem;
             margin-bottom: 1rem;
-            background: rgba(255,255,255,0.1);
-            border: 2px solid rgba(74, 222, 128, 0.3);
-            border-radius: 10px;
+            background: transparent;
+            border: 1px solid rgba(0, 245, 255, 0.3);
+            border-radius: 4px;
             color: white;
-            font-size: 16px;
+            font-size: 14px;
+            letter-spacing: 1px;
+            box-sizing: border-box;
         }
         .auth-input:focus {
             outline: none;
-            border-color: #4ade80;
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 10px rgba(0, 245, 255, 0.2);
         }
         .auth-btn {
             width: 100%;
             padding: 1rem;
-            background: linear-gradient(135deg, #4ade80 0%, #22d3ee 100%);
-            border: none;
-            border-radius: 10px;
-            color: #1a1a2e;
-            font-size: 1rem;
-            font-weight: bold;
+            background: transparent;
+            border: 1px solid var(--neon-green);
+            border-radius: 4px;
+            color: var(--neon-green);
+            font-size: 12px;
+            font-weight: 400;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: all 0.2s;
+            letter-spacing: 2px;
+            text-transform: uppercase;
         }
-        .auth-btn:hover { transform: scale(1.02); }
-        .auth-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+        .auth-btn:hover { 
+            background: rgba(0, 255, 136, 0.1);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+            text-shadow: 0 0 8px var(--neon-green);
+        }
+        .auth-btn:disabled { 
+            opacity: 0.4; 
+            cursor: not-allowed;
+            border-color: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.4);
+        }
         .auth-error {
-            background: rgba(239, 68, 68, 0.2);
-            color: #f87171;
+            background: rgba(255, 51, 102, 0.1);
+            border: 1px solid var(--neon-red);
+            color: var(--neon-red);
             padding: 0.75rem;
-            border-radius: 8px;
+            border-radius: 4px;
             margin-bottom: 1rem;
             text-align: center;
             display: none;
+            font-size: 12px;
         }
         .auth-error.visible { display: block; }
         .auth-user-info {
             position: fixed;
             top: 10px;
             right: 10px;
-            background: rgba(0,0,0,0.5);
+            background: var(--bg-card);
+            border: 1px solid var(--neon-cyan);
             padding: 8px 15px;
-            border-radius: 20px;
-            color: #4ade80;
-            font-size: 14px;
+            border-radius: 4px;
+            color: var(--neon-cyan);
+            font-size: 12px;
             z-index: 1000;
             display: flex;
             align-items: center;
             gap: 10px;
+            letter-spacing: 1px;
         }
         .auth-user-info.hidden { display: none; }
         .auth-logout-btn {
-            background: rgba(239, 68, 68, 0.3);
-            border: none;
-            color: #f87171;
+            background: transparent;
+            border: 1px solid var(--neon-red);
+            color: var(--neon-red);
             padding: 4px 10px;
-            border-radius: 10px;
+            border-radius: 4px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 10px;
+            letter-spacing: 1px;
+            transition: all 0.2s ease;
         }
-        .auth-logout-btn:hover { background: rgba(239, 68, 68, 0.5); }
+        .auth-logout-btn:hover { 
+            background: rgba(255, 51, 102, 0.1);
+            box-shadow: 0 0 10px rgba(255, 51, 102, 0.3);
+        }
         .play-guest-btn {
             width: 100%;
             margin-top: 1rem;
             padding: 0.75rem;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 10px;
-            color: #aaa;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 4px;
+            color: rgba(255,255,255,0.6);
             cursor: pointer;
-            font-size: 0.9rem;
+            font-size: 11px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
         }
-        .play-guest-btn:hover { background: rgba(255,255,255,0.15); }
+        .play-guest-btn:hover { 
+            border-color: rgba(255,255,255,0.5);
+            color: rgba(255,255,255,0.8);
+        }
         
         /* Server Wake-up Screen */
         #serverWakeScreen {
@@ -1295,7 +1367,7 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%);
+            background: var(--bg-darker);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -1304,51 +1376,65 @@
         }
         #serverWakeScreen.hidden { display: none; }
         #serverWakeScreen h1 {
-            color: #4ade80;
-            font-size: 48px;
+            color: var(--neon-cyan);
+            font-size: 36px;
             margin-bottom: 30px;
-            text-shadow: 0 0 20px rgba(74, 222, 128, 0.5);
+            text-shadow: 0 0 30px var(--neon-cyan);
             letter-spacing: 8px;
+            font-weight: 300;
+            text-transform: uppercase;
         }
         .wake-status {
-            color: rgba(255,255,255,0.8);
-            font-size: 18px;
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
             margin-bottom: 20px;
+            letter-spacing: 2px;
         }
         .wake-progress {
             width: 300px;
-            height: 6px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 3px;
+            height: 4px;
+            background: transparent;
+            border: 1px solid rgba(0, 245, 255, 0.3);
+            border-radius: 2px;
             overflow: hidden;
             margin-bottom: 15px;
         }
         .wake-progress-bar {
             height: 100%;
-            background: linear-gradient(90deg, #4ade80, #22d3ee);
-            border-radius: 3px;
+            background: var(--neon-cyan);
+            border-radius: 2px;
             width: 0%;
             transition: width 0.3s ease;
+            box-shadow: 0 0 10px var(--neon-cyan);
         }
         .wake-tip {
-            color: rgba(255,255,255,0.5);
-            font-size: 14px;
+            color: rgba(255,255,255,0.4);
+            font-size: 12px;
             text-align: center;
             max-width: 350px;
+            letter-spacing: 1px;
         }
         .wake-retry-btn {
             margin-top: 20px;
-            padding: 12px 30px;
-            background: linear-gradient(135deg, #4ade80 0%, #22d3ee 100%);
-            border: none;
-            border-radius: 25px;
-            color: #1a1a2e;
-            font-size: 16px;
-            font-weight: bold;
+            padding: 10px 25px;
+            background: transparent;
+            border: 1px solid var(--neon-green);
+            border-radius: 4px;
+            color: var(--neon-green);
+            font-size: 12px;
+            font-weight: 400;
             cursor: pointer;
             display: none;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
         }
-        .wake-retry-btn:hover { transform: scale(1.05); }
+        .wake-retry-btn:hover { 
+            background: rgba(0, 255, 136, 0.1);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+            text-shadow: 0 0 8px var(--neon-green);
+        }
+        
         /* Logout button - always visible top-center */
         #logoutBtn {
             position: fixed;
@@ -1356,16 +1442,22 @@
             left: 50%;
             transform: translateX(-50%);
             z-index: 100000;
-            background: rgba(255,255,255,0.06);
-            color: #fff;
-            border: 1px solid rgba(255,255,255,0.08);
+            background: transparent;
+            color: var(--neon-red);
+            border: 1px solid var(--neon-red);
             padding: 6px 12px;
-            border-radius: 8px;
-            font-weight: 600;
+            border-radius: 4px;
+            font-weight: 400;
             cursor: pointer;
-            backdrop-filter: blur(6px);
+            font-size: 11px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
         }
-        #logoutBtn:hover { opacity: 0.95; }
+        #logoutBtn:hover { 
+            background: rgba(255, 51, 102, 0.1);
+            box-shadow: 0 0 10px rgba(255, 51, 102, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -1379,8 +1471,8 @@
         </div>
         <div class="wake-tip" id="wakeTip">Free servers sleep after inactivity. Waking up usually takes 10-30 seconds.</div>
         <button class="wake-retry-btn" id="wakeRetryBtn" onclick="startServerWake()">Retry Connection</button>
-        <button class="wake-retry-btn" id="playOfflineBtn" onclick="playOffline()" style="display:block; background:linear-gradient(90deg,#10b981,#059669); margin-top:10px;">🎮 Play Offline</button>
-        <button class="wake-retry-btn" id="offlineVersionBtn" onclick="downloadOfflineVersion()" style="display:block; background:linear-gradient(90deg,#6366f1,#8b5cf6); margin-top:10px;">📥 Download Offline Version</button>
+        <button class="wake-retry-btn" id="playOfflineBtn" onclick="playOffline()" style="display:block; border-color:var(--neon-magenta); color:var(--neon-magenta); margin-top:10px;">🎮 Play Offline</button>
+        <button class="wake-retry-btn" id="offlineVersionBtn" onclick="downloadOfflineVersion()" style="display:block; border-color:var(--neon-cyan); color:var(--neon-cyan); margin-top:10px;">📥 Download Offline Version</button>
     </div>
 
     <!-- Auth Screen -->
@@ -1434,7 +1526,7 @@
             <button id="playButton" onclick="startGame()">PLAY</button>
             <button id="selectButton" onclick="showClassSelection()">Select Class</button>
             <button id="summonHomeButton" class="home-action" onclick="showSummonScreen()">Summon</button>
-            <button id="eventsHomeButton" class="home-action" onclick="showEventsScreen()" style="background:linear-gradient(90deg,#f59e0b,#ef4444); color:#fff;"><span id="eventsFireIcon"></span> Events</button>
+            <button id="eventsHomeButton" class="home-action" onclick="showEventsScreen()" style="border-color:var(--neon-yellow); color:var(--neon-yellow);"><span id="eventsFireIcon"></span> Events</button>
         </div>
     </div>
     <div id="classSelection">
@@ -1667,7 +1759,7 @@
         <div style="margin-top: 10px;">
             <strong style="font-size: 12px;">Wave Progress:</strong>
             <div class="hp-bar-container" style="margin-top: 5px;">
-                <div class="hp-bar" id="waveProgress" style="width: 0%; background: linear-gradient(90deg, #4ade80 0%, #22c55e 100%);"></div>
+                <div class="hp-bar" id="waveProgress" style="width: 0%; background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green);"></div>
                 <div class="hp-text" id="waveProgressText">0 / 10</div>
             </div>
         </div>
@@ -1783,17 +1875,17 @@
     <!-- Mobile controls: joystick + ability buttons (bottom-right, touch-first) -->
     <style>
         #mobileControls { position: fixed; right: 18px; bottom: 18px; z-index: 10001; display: flex; gap: 12px; align-items: center; pointer-events: none; }
-        #mobileJoystick { width: 120px; height: 120px; border-radius: 999px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); position: relative; touch-action: none; pointer-events: auto; }
-        #mobileStick { width: 56px; height: 56px; border-radius: 999px; background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(220,220,220,0.95)); position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); box-shadow: 0 6px 18px rgba(0,0,0,0.4); }
+        #mobileJoystick { width: 120px; height: 120px; border-radius: 999px; background: transparent; border: 1px solid var(--neon-cyan); position: relative; touch-action: none; pointer-events: auto; box-shadow: 0 0 15px rgba(0, 245, 255, 0.2); }
+        #mobileStick { width: 56px; height: 56px; border-radius: 999px; background: transparent; border: 2px solid var(--neon-cyan); position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 10px var(--neon-cyan); }
         #mobileAbilities { display: flex; flex-direction: column; gap: 10px; pointer-events: auto; }
-        .mobile-ability-btn { width: clamp(64px, 18vw, 110px); height: clamp(64px, 18vw, 110px); border-radius: 12px; background: linear-gradient(90deg,#ff6b6b,#ff3b3b); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; box-shadow: 0 8px 20px rgba(0,0,0,0.45); border: none; }
-        .mobile-ability-btn.secondary { background: linear-gradient(90deg,#60a5fa,#7c3aed); }
-        .mobile-ability-btn.tertiary { background: linear-gradient(90deg,#34d399,#06b6d4); }
+        .mobile-ability-btn { width: clamp(64px, 18vw, 110px); height: clamp(64px, 18vw, 110px); border-radius: 8px; background: transparent; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:400; box-shadow: 0 0 15px rgba(255, 51, 102, 0.3); border: 1px solid var(--neon-red); }
+        .mobile-ability-btn.secondary { border-color: var(--neon-magenta); box-shadow: 0 0 15px rgba(255, 0, 255, 0.3); }
+        .mobile-ability-btn.tertiary { border-color: var(--neon-green); box-shadow: 0 0 15px rgba(0, 255, 136, 0.3); }
         .mobile-ability-btn:active { transform: scale(0.97); }
         .mobile-ability-btn { position: relative; overflow: hidden; }
-        .mobile-ability-label { position: absolute; inset: 0; display:flex; align-items:center; justify-content:center; z-index: 4; pointer-events: none; font-size: clamp(12px, 3.5vw, 18px); font-weight:800; color:#fff; text-shadow: 0 2px 6px rgba(0,0,0,0.6); white-space: normal; padding:6px; text-align:center; word-break: break-word; text-transform: none; }
+        .mobile-ability-label { position: absolute; inset: 0; display:flex; align-items:center; justify-content:center; z-index: 4; pointer-events: none; font-size: clamp(12px, 3.5vw, 18px); font-weight:400; color:#fff; text-shadow: 0 0 8px currentColor; white-space: normal; padding:6px; text-align:center; word-break: break-word; text-transform: uppercase; letter-spacing: 1px; }
         .mobile-cooldown-overlay { position: absolute; inset: 0; z-index: 2; transition: height 0.12s linear; }
-        .mobile-cooldown-text { position: absolute; inset: 0; display:flex; align-items:center; justify-content:center; z-index: 5; font-weight:800; font-size:18px; pointer-events:none; color:#fff; }
+        .mobile-cooldown-text { position: absolute; inset: 0; display:flex; align-items:center; justify-content:center; z-index: 5; font-weight:400; font-size:18px; pointer-events:none; color:#fff; }
         @media (min-width: 900px) { #mobileControls { display: none; } }
         @media (max-width: 900px) { #abilities { display: none !important; } }
     </style>
@@ -1971,92 +2063,92 @@
     </div>
 
     <!-- Events Screen -->
-    <div id="eventsScreen" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:9998; align-items:center; justify-content:center; padding:20px; box-sizing:border-box; overflow:auto;">
-        <div style="width:800px; max-width:95vw; max-height:90vh; background:linear-gradient(180deg, rgba(20,10,5,0.98), rgba(40,15,10,0.98)); border-radius:16px; padding:24px; position:relative; box-shadow:0 20px 80px rgba(239,68,68,0.3); overflow:auto; border:2px solid rgba(239,68,68,0.4);">
-            <button onclick="closeEventsScreen()" aria-label="Close events" style="position:absolute; right:14px; top:14px; background:#3b2020; border:0; padding:10px 14px; color:#fff; border-radius:10px; z-index:20; box-shadow:0 6px 18px rgba(0,0,0,0.6); cursor:pointer;"><span id="eventsCloseIcon"></span></button>
-            <h2 style="margin:0 0 20px 0; color:#fff; font-size:28px; text-align:center;"><span id="eventsTitleIcon"></span> <span style="background:linear-gradient(90deg,#f59e0b,#ef4444,#f97316); background-clip:text; -webkit-background-clip:text; -webkit-text-fill-color:transparent;">Events</span></h2>
+    <div id="eventsScreen" style="display:none; position:fixed; inset:0; background:rgba(5,5,8,0.95); z-index:9998; align-items:center; justify-content:center; padding:20px; box-sizing:border-box; overflow:auto;">
+        <div style="width:800px; max-width:95vw; max-height:90vh; background:var(--bg-card); border-radius:8px; padding:24px; position:relative; box-shadow:0 0 40px rgba(255,255,0,0.15); overflow:auto; border:1px solid var(--neon-yellow); backdrop-filter:blur(20px);">
+            <button onclick="closeEventsScreen()" aria-label="Close events" style="position:absolute; right:14px; top:14px; background:transparent; border:1px solid var(--neon-red); padding:8px 12px; color:var(--neon-red); border-radius:4px; z-index:20; cursor:pointer; font-size:12px; letter-spacing:1px;"><span id="eventsCloseIcon"></span></button>
+            <h2 style="margin:0 0 20px 0; color:var(--neon-yellow); font-size:24px; text-align:center; font-weight:300; letter-spacing:4px; text-transform:uppercase; text-shadow:0 0 15px var(--neon-yellow);"><span id="eventsTitleIcon"></span> Events</h2>
             
             <!-- Main Quest Section -->
-            <div style="background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(249,115,22,0.1)); border-radius:12px; padding:18px; margin-bottom:20px; border:1px solid rgba(239,68,68,0.3);">
-                <h3 style="margin:0 0 12px 0; color:#f97316; font-size:20px;"><span id="mainQuestIcon"></span> Main Quest: Fire Class</h3>
-                <p style="color:#ddd; margin-bottom:16px;">Complete 5 quests to earn a <span style="color:#4ade80; font-weight:700;">Free Basic Summon</span>. Complete all 10 to unlock <span style="color:#ef4444; font-weight:700;">Fire</span> and earn a <span style="color:#ffd700; font-weight:700;">FREE Gold Summon!</span></p>
+            <div style="background:transparent; border-radius:6px; padding:18px; margin-bottom:20px; border:1px solid rgba(255,255,0,0.3);">
+                <h3 style="margin:0 0 12px 0; color:var(--neon-yellow); font-size:16px; font-weight:400; letter-spacing:2px; text-shadow:0 0 8px var(--neon-yellow);"><span id="mainQuestIcon"></span> Main Quest: Fire Class</h3>
+                <p style="color:rgba(255,255,255,0.7); margin-bottom:16px; font-size:13px;">Complete 5 quests to earn a <span style="color:var(--neon-green); font-weight:400;">Free Basic Summon</span>. Complete all 10 to unlock <span style="color:var(--neon-red); font-weight:400;">Fire</span> and earn a <span style="color:var(--neon-yellow); font-weight:400;">FREE Gold Summon!</span></p>
                 
                 <div id="fireQuestProgress" style="margin-bottom:16px;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-                        <span style="color:#fff; font-weight:600;">Overall Progress</span>
-                        <span id="fireQuestCount" style="color:#4ade80; font-weight:700;">0 / 10</span>
+                        <span style="color:rgba(255,255,255,0.6); font-weight:400; letter-spacing:1px;">Overall Progress</span>
+                        <span id="fireQuestCount" style="color:var(--neon-green); font-weight:400;">0 / 10</span>
                     </div>
-                    <div style="background:rgba(0,0,0,0.4); border-radius:8px; height:12px; overflow:hidden;">
-                        <div id="fireQuestBar" style="height:100%; background:linear-gradient(90deg,#ef4444,#f97316); width:0%; transition:width 0.3s ease;"></div>
+                    <div style="background:transparent; border:1px solid rgba(255,255,0,0.3); border-radius:4px; height:8px; overflow:hidden;">
+                        <div id="fireQuestBar" style="height:100%; background:var(--neon-yellow); width:0%; transition:width 0.3s ease; box-shadow:0 0 8px var(--neon-yellow);"></div>
                     </div>
                 </div>
                 
                 <div id="fireQuestList" style="display:flex; flex-direction:column; gap:10px;"></div>
 
-                <div id="fireQuestReward" style="display:none; margin-top:16px; padding:14px; background:linear-gradient(90deg,rgba(74,222,128,0.2),rgba(34,211,238,0.2)); border-radius:10px; text-align:center;">
-                    <p style="color:#4ade80; font-weight:800; font-size:18px; margin:0;"><span id="questCompleteIcon"></span> All Quests Complete!</p>
-                    <p style="color:#ffd700; margin:8px 0 8px 0;">Fire class ready to unlock — claim your reward below.</p>
-                    <button onclick="claimFireFinal()" style="padding:10px 16px; border-radius:10px; background:linear-gradient(90deg,#ffd700,#ffb347); border:0; font-weight:800; cursor:pointer;">Claim Unlock & Free Gold Summon</button>
+                <div id="fireQuestReward" style="display:none; margin-top:16px; padding:14px; background:transparent; border:1px solid var(--neon-green); border-radius:6px; text-align:center; box-shadow:0 0 15px rgba(0,255,136,0.2);">
+                    <p style="color:var(--neon-green); font-weight:400; font-size:16px; margin:0; text-shadow:0 0 8px var(--neon-green);"><span id="questCompleteIcon"></span> All Quests Complete!</p>
+                    <p style="color:var(--neon-yellow); margin:8px 0 8px 0; font-size:13px;">Fire class ready to unlock — claim your reward below.</p>
+                    <button onclick="claimFireFinal()" style="padding:10px 16px; border-radius:4px; background:transparent; border:1px solid var(--neon-yellow); color:var(--neon-yellow); font-weight:400; cursor:pointer; letter-spacing:1px; text-transform:uppercase;">Claim Unlock & Free Gold Summon</button>
                 </div>
-                <div id="fireQuestHalfReward" style="display:none; margin-top:12px; padding:10px; background:linear-gradient(90deg,rgba(148,163,184,0.08),rgba(74,222,128,0.06)); border-radius:8px; text-align:center;">
-                    <p style="color:#a7f3d0; font-weight:700; margin:0;">Milestone reached — Free Basic Summon available!</p>
-                    <div style="margin-top:8px;"><button onclick="claimFireHalf()" style="padding:8px 12px; border-radius:8px; background:linear-gradient(90deg,#4ade80,#22d3ee); border:0; color:#071122; font-weight:800; cursor:pointer;">Claim Free Basic Summon</button></div>
+                <div id="fireQuestHalfReward" style="display:none; margin-top:12px; padding:10px; background:transparent; border:1px solid var(--neon-cyan); border-radius:6px; text-align:center;">
+                    <p style="color:var(--neon-cyan); font-weight:400; margin:0; font-size:13px;">Milestone reached — Free Basic Summon available!</p>
+                    <div style="margin-top:8px;"><button onclick="claimFireHalf()" style="padding:8px 12px; border-radius:4px; background:transparent; border:1px solid var(--neon-cyan); color:var(--neon-cyan); font-weight:400; cursor:pointer; letter-spacing:1px;">Claim Free Basic Summon</button></div>
                 </div>
             </div>
             
             <!-- Miner Event (separate box) -->
-            <div style="background:rgba(255,255,255,0.05); border-radius:12px; padding:18px; border:1px solid rgba(255,255,255,0.06); margin-bottom:16px;">
-                <h3 style="margin:0 0 8px 0; color:#8b5cf6;"><span id="minerEventIcon"></span> Miner Event</h3>
-                <p style="color:#ccc; margin:0 0 12px 0;">Quick event: login or play a game to earn Miner shards.</p>
+            <div style="background:transparent; border-radius:6px; padding:18px; border:1px solid rgba(255,0,255,0.3); margin-bottom:16px;">
+                <h3 style="margin:0 0 8px 0; color:var(--neon-magenta); font-weight:400; letter-spacing:2px; text-shadow:0 0 8px var(--neon-magenta);"><span id="minerEventIcon"></span> Miner Event</h3>
+                <p style="color:rgba(255,255,255,0.6); margin:0 0 12px 0; font-size:13px;">Quick event: login or play a game to earn Miner shards.</p>
                 <div id="minerQuestList" style="display:flex; flex-direction:column; gap:8px;"></div>
             </div>
 
             <!-- Future Events Placeholder -->
-            <div style="background:rgba(255,255,255,0.05); border-radius:12px; padding:18px; border:1px solid rgba(255,255,255,0.1);">
-                <h3 style="margin:0 0 8px 0; color:#a78bfa;"><span id="upcomingEventsIcon"></span> Upcoming Events</h3>
-                <p style="color:#888; margin:0;">More events coming soon...</p>
+            <div style="background:transparent; border-radius:6px; padding:18px; border:1px solid rgba(0,245,255,0.2);">
+                <h3 style="margin:0 0 8px 0; color:var(--neon-cyan); font-weight:400; letter-spacing:2px; text-shadow:0 0 8px var(--neon-cyan);"><span id="upcomingEventsIcon"></span> Upcoming Events</h3>
+                <p style="color:rgba(255,255,255,0.4); margin:0; font-size:13px;">More events coming soon...</p>
             </div>
 
             <!-- Events Log (hidden; logging moved to console only) -->
-            <div id="eventsLogBox" style="display:none; margin-top:14px; background:rgba(0,0,0,0.22); border-radius:12px; padding:12px; border:1px solid rgba(255,255,255,0.04); max-height:160px; overflow:hidden;">
-                <h4 style="margin:0 0 8px 0; color:#c7b3ff; font-size:14px;">Event Log</h4>
+            <div id="eventsLogBox" style="display:none; margin-top:14px; background:transparent; border-radius:6px; padding:12px; border:1px solid rgba(0,245,255,0.1); max-height:160px; overflow:hidden;">
+                <h4 style="margin:0 0 8px 0; color:var(--neon-cyan); font-size:12px; letter-spacing:1px;">Event Log</h4>
                 <div id="eventsLogList" style="max-height:120px; overflow-y:auto; display:flex; flex-direction:column-reverse; gap:6px; padding-right:6px;"></div>
             </div>
         </div>
     </div>
 
     <!-- Summon screen: 3D podium + summon animation -->
-    <div id="summonScreen" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:9999; align-items:center; justify-content:center; padding:20px; box-sizing:border-box; overflow:auto;">
-        <div style="width:920px; max-width:95vw; height:680px; max-height:calc(95vh - 40px); background:linear-gradient(180deg, rgba(6,7,20,0.95), rgba(12,12,32,0.95)); border-radius:16px; padding:18px; position:relative; box-shadow:0 20px 80px rgba(0,0,0,0.7); overflow:auto;">
-            <div id="summonError" style="display:none; color:#ff9aa2; font-weight:700; text-align:center; padding:8px 12px; border-radius:8px; background:rgba(0,0,0,0.35); position:absolute; left:18px; right:18px; top:18px; z-index:12;"></div>
-            <button onclick="closeSummonScreen()" aria-label="Close summon" style="position:absolute; right:14px; top:14px; background:#2b2b3a; border:0; padding:10px 14px; color:#fff; border-radius:10px; z-index:20; box-shadow:0 6px 18px rgba(0,0,0,0.6);">X</button>
+    <div id="summonScreen" style="display:none; position:fixed; inset:0; background:rgba(5,5,8,0.95); z-index:9999; align-items:center; justify-content:center; padding:20px; box-sizing:border-box; overflow:auto;">
+        <div style="width:920px; max-width:95vw; height:680px; max-height:calc(95vh - 40px); background:var(--bg-card); border-radius:8px; padding:18px; position:relative; box-shadow:0 0 40px rgba(0,245,255,0.15); overflow:auto; border:1px solid var(--neon-cyan); backdrop-filter:blur(20px);">
+            <div id="summonError" style="display:none; color:var(--neon-red); font-weight:400; text-align:center; padding:8px 12px; border-radius:4px; background:transparent; border:1px solid var(--neon-red); position:absolute; left:18px; right:18px; top:18px; z-index:12;"></div>
+            <button onclick="closeSummonScreen()" aria-label="Close summon" style="position:absolute; right:14px; top:14px; background:transparent; border:1px solid var(--neon-red); padding:8px 12px; color:var(--neon-red); border-radius:4px; z-index:20; cursor:pointer; font-size:12px; letter-spacing:1px;">X</button>
             <!-- Summon Tabs -->
             <div id="summonTabs" style="display:flex; gap:8px; margin-bottom:12px;">
-                <button id="tabGold" onclick="setSummonTab('gold')" style="flex:1; padding:12px 0; border-radius:10px 10px 0 0; border:0; font-weight:800; font-size:15px; cursor:pointer; background:linear-gradient(90deg,#ffd700,#ffb347); color:#1a1a2e;"><span id="tabGoldIcon"></span> Gold Summon</button>
-                <button id="tabBasic" onclick="setSummonTab('basic')" style="flex:1; padding:12px 0; border-radius:10px 10px 0 0; border:0; font-weight:800; font-size:15px; cursor:pointer; background:rgba(255,255,255,0.1); color:#ccc;">Basic Summon</button>
+                <button id="tabGold" onclick="setSummonTab('gold')" style="flex:1; padding:10px 0; border-radius:4px 4px 0 0; border:1px solid var(--neon-yellow); background:transparent; font-weight:400; font-size:12px; cursor:pointer; color:var(--neon-yellow); letter-spacing:1px; text-transform:uppercase;"><span id="tabGoldIcon"></span> Gold Summon</button>
+                <button id="tabBasic" onclick="setSummonTab('basic')" style="flex:1; padding:10px 0; border-radius:4px 4px 0 0; border:1px solid rgba(255,255,255,0.2); background:transparent; font-weight:400; font-size:12px; cursor:pointer; color:rgba(255,255,255,0.5); letter-spacing:1px; text-transform:uppercase;">Basic Summon</button>
             </div>
             <div style="display:flex; gap:18px; height:calc(100% - 56px);">
                 <div style="flex:1; display:flex; flex-direction:column; gap:12px; align-items:center; justify-content:center;">
-                    <div id="summonCanvasContainer" style="width:100%; height:400px; background:#07101a; border-radius:12px; overflow:hidden;"></div>
+                    <div id="summonCanvasContainer" style="width:100%; height:400px; background:var(--bg-darker); border-radius:6px; overflow:hidden; border:1px solid rgba(0,245,255,0.2);"></div>
                     <div style="display:flex; gap:12px; align-items:center;">
-                        <button id="doSummonBtn" onclick="doSummon()" style="background:linear-gradient(90deg,#ffd47a,#ff80c4); padding:14px 20px; min-width:140px; border-radius:12px; border:0; font-weight:800; text-align:center;">Summon</button>
-                        <button id="doSummon10Btn" onclick="doSummonMultiple(10)" style="background:linear-gradient(90deg,#ffd47a,#ff80c4); padding:14px 20px; min-width:140px; border-radius:12px; border:0; font-weight:800; text-align:center;">Summon x10</button>
-                        <div id="summonResult" style="color:#fff; font-weight:700; min-width:260px; text-align:left;"></div>
+                        <button id="doSummonBtn" onclick="doSummon()" style="background:transparent; border:1px solid var(--neon-magenta); color:var(--neon-magenta); padding:10px 18px; min-width:120px; border-radius:4px; font-weight:400; text-align:center; letter-spacing:1px; text-transform:uppercase; cursor:pointer;">Summon</button>
+                        <button id="doSummon10Btn" onclick="doSummonMultiple(10)" style="background:transparent; border:1px solid var(--neon-magenta); color:var(--neon-magenta); padding:10px 18px; min-width:120px; border-radius:4px; font-weight:400; text-align:center; letter-spacing:1px; text-transform:uppercase; cursor:pointer;">Summon x10</button>
+                        <div id="summonResult" style="color:#fff; font-weight:400; min-width:260px; text-align:left;"></div>
                     </div>
                 </div>
-                <div style="width:360px; padding:12px; color:#ddd; overflow:visible;">
+                <div style="width:360px; padding:12px; color:rgba(255,255,255,0.7); overflow:visible;">
                     <div id="summonInfoGold">
-                        <h3 style="margin-top:8px; color:#ffd700;"><span id="goldSummonIcon"></span> Gold Summoning</h3>
-                        <p style="color:#ddd;">Each summon costs <span style="color:#ffd700; font-weight:700;">2,000 coins</span>.</p>
-                        <p style="color:#ddd; margin-top:4px;">Grants <span style="color:#ffd700; font-weight:700;">50 shards (75%)</span> or <span style="color:#4ade80; font-weight:700;">100 shards (25%)</span> for a random class.</p>
-                        <p style="color:#7dd3fc; margin-top:6px; font-weight:600;">First Gold summon is FREE!</p>
+                        <h3 style="margin-top:8px; color:var(--neon-yellow); font-weight:400; letter-spacing:2px; text-shadow:0 0 8px var(--neon-yellow);"><span id="goldSummonIcon"></span> Gold Summoning</h3>
+                        <p style="color:rgba(255,255,255,0.6); font-size:13px;">Each summon costs <span style="color:var(--neon-yellow); font-weight:400;">2,000 coins</span>.</p>
+                        <p style="color:rgba(255,255,255,0.6); margin-top:4px; font-size:13px;">Grants <span style="color:var(--neon-yellow); font-weight:400;">50 shards (75%)</span> or <span style="color:var(--neon-green); font-weight:400;">100 shards (25%)</span> for a random class.</p>
+                        <p style="color:var(--neon-cyan); margin-top:6px; font-weight:400; font-size:13px;">First Gold summon is FREE!</p>
                     </div>
                     <div id="summonInfoBasic" style="display:none;">
-                        <h3 style="margin-top:8px">Basic Summoning</h3>
-                        <p style="color:#ddd;">Each summon costs <span style="color:#ffd47a; font-weight:700;">500 coins</span> and grants <span style="color:#a78bfa; font-weight:700;">5-30 shards</span> for a random class.</p>
+                        <h3 style="margin-top:8px; color:var(--neon-magenta); font-weight:400; letter-spacing:2px; text-shadow:0 0 8px var(--neon-magenta);">Basic Summoning</h3>
+                        <p style="color:rgba(255,255,255,0.6); font-size:13px;">Each summon costs <span style="color:var(--neon-yellow); font-weight:400;">500 coins</span> and grants <span style="color:var(--neon-magenta); font-weight:400;">5-30 shards</span> for a random class.</p>
                     </div>
-                    <p style="margin-top:10px; color:#ccc;">Collect <strong>100 shards</strong> to unlock a class.</p>
-                    <h4 style="margin-top:16px; color:#e0e7ff;">Shard Progress</h4>
+                    <p style="margin-top:10px; color:rgba(255,255,255,0.5); font-size:12px;">Collect <strong style="color:var(--neon-cyan);">100 shards</strong> to unlock a class.</p>
+                    <h4 style="margin-top:16px; color:var(--neon-cyan); font-weight:400; letter-spacing:1px;">Shard Progress</h4>
                     <div id="shardProgressList" style="max-height:250px; overflow-y:auto;"></div>
                 </div>
             </div>
@@ -2192,7 +2284,7 @@
                 }
                 
                 const geometry = new THREE.BufferGeometry().setFromPoints(points);
-                const material = new THREE.LineBasicMaterial({ color: 0xffff00, linewidth: 3 });
+                const material = new THREE.LineBasicMaterial({ color: 0x00f5ff, linewidth: 3 });
                 const lightning = new THREE.Line(geometry, material);
                 
                 this.scene.add(lightning);
@@ -2202,7 +2294,7 @@
             createFireball(position, direction, speed) {
                 const geometry = new THREE.SphereGeometry(0.3, 16, 16);
                 const material = new THREE.MeshStandardMaterial({ 
-                    color: 0xff6600, emissive: 0xff3300, emissiveIntensity: 0.8 
+                    color: 0x0a0a12, emissive: 0xff6600, emissiveIntensity: 0.8 
                 });
                 const fireball = new THREE.Mesh(geometry, material);
                 
@@ -2212,7 +2304,7 @@
                 fireball.userData.trail = [];
                 
                 const glowGeometry = new THREE.SphereGeometry(0.5, 16, 16);
-                const glowMaterial = new THREE.MeshBasicMaterial({ color: 0xff6600, transparent: true, opacity: 0.3 });
+                const glowMaterial = new THREE.MeshBasicMaterial({ color: 0xff6600, transparent: true, opacity: 0.2 });
                 const glow = new THREE.Mesh(glowGeometry, glowMaterial);
                 fireball.add(glow);
                 
@@ -2222,7 +2314,7 @@
             
             createProjectileTrail(position, color) {
                 const geometry = new THREE.SphereGeometry(0.15, 8, 8);
-                const material = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.6 });
+                const material = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.5 });
                 const trail = new THREE.Mesh(geometry, material);
                 trail.position.copy(position);
                 trail.userData = { lifetime: 300, created: Date.now() };
@@ -2234,7 +2326,7 @@
             createWave(position, radius) {
                 const geometry = new THREE.RingGeometry(0.5, radius, 32);
                 const material = new THREE.MeshBasicMaterial({ 
-                    color: 0x00bfff, transparent: true, opacity: 0.7, side: THREE.DoubleSide 
+                    color: 0x00f5ff, transparent: true, opacity: 0.6, side: THREE.DoubleSide 
                 });
                 const wave = new THREE.Mesh(geometry, material);
                 wave.position.copy(position);
@@ -2910,7 +3002,7 @@
     <script>
         // Scene setup
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x0f0f1e);
+        scene.background = new THREE.Color(0x050508);
         
         const camera = new THREE.OrthographicCamera(
             window.innerWidth / -40,
@@ -3013,17 +3105,25 @@
             const infoGold = document.getElementById('summonInfoGold');
             const infoBasic = document.getElementById('summonInfoBasic');
             if (tab === 'gold') {
-                tabGold.style.background = 'linear-gradient(90deg,#ffd700,#ffb347)';
-                tabGold.style.color = '#1a1a2e';
-                tabBasic.style.background = 'rgba(255,255,255,0.1)';
-                tabBasic.style.color = '#ccc';
+                tabGold.style.background = 'rgba(255,255,0,0.1)';
+                tabGold.style.borderColor = 'var(--neon-yellow)';
+                tabGold.style.color = 'var(--neon-yellow)';
+                tabGold.style.boxShadow = '0 0 10px rgba(255,255,0,0.2)';
+                tabBasic.style.background = 'transparent';
+                tabBasic.style.borderColor = 'rgba(255,255,255,0.2)';
+                tabBasic.style.color = 'rgba(255,255,255,0.5)';
+                tabBasic.style.boxShadow = 'none';
                 if (infoGold) infoGold.style.display = 'block';
                 if (infoBasic) infoBasic.style.display = 'none';
             } else {
-                tabBasic.style.background = 'linear-gradient(90deg,#a78bfa,#7c3aed)';
-                tabBasic.style.color = '#fff';
-                tabGold.style.background = 'rgba(255,255,255,0.1)';
-                tabGold.style.color = '#ccc';
+                tabBasic.style.background = 'rgba(255,0,255,0.1)';
+                tabBasic.style.borderColor = 'var(--neon-magenta)';
+                tabBasic.style.color = 'var(--neon-magenta)';
+                tabBasic.style.boxShadow = '0 0 10px rgba(255,0,255,0.2)';
+                tabGold.style.background = 'transparent';
+                tabGold.style.borderColor = 'rgba(255,255,255,0.2)';
+                tabGold.style.color = 'rgba(255,255,255,0.5)';
+                tabGold.style.boxShadow = 'none';
                 if (infoGold) infoGold.style.display = 'none';
                 if (infoBasic) infoBasic.style.display = 'block';
             }
@@ -3677,7 +3777,7 @@
             }
 
             const sceneS = new THREE.Scene();
-            sceneS.background = new THREE.Color(0x04101a);
+            sceneS.background = new THREE.Color(0x050508);
             const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
             camera.position.set(0, 6, 14);
             camera.lookAt(0, 0, 0);
@@ -3690,7 +3790,7 @@
                 console.log('[Summon] canvas size after append', rendererS.domElement.clientWidth, rendererS.domElement.clientHeight);
                 rendererS.domElement.style.visibility = 'visible';
                 // restore clear color to scene background
-                if (typeof rendererS.setClearColor === 'function') rendererS.setClearColor(0x04101a, 1);
+                if (typeof rendererS.setClearColor === 'function') rendererS.setClearColor(0x050508, 1);
             } catch (e) { console.warn('[Summon] post-append restore failed', e); }
             // Ensure the canvas fills the container and is visible
             try {
@@ -3721,16 +3821,30 @@
             dir.position.set(5, 10, 7);
             sceneS.add(dir);
 
-            // podium
+            // podium - neon bordered platform
             const podiumGeo = new THREE.BoxGeometry(4, 1, 2.6);
-            const podiumMat = new THREE.MeshStandardMaterial({ color: 0x222238, metalness: 0.3, roughness: 0.6 });
+            const podiumMat = new THREE.MeshStandardMaterial({ 
+                color: 0x0a0a12, 
+                metalness: 0.6, 
+                roughness: 0.3,
+                emissive: 0x00f5ff,
+                emissiveIntensity: 0.05
+            });
             const podium = new THREE.Mesh(podiumGeo, podiumMat);
             podium.position.set(0, -0.5, 0);
+            
+            // Add wireframe edge to podium for neon outline effect
+            const podiumEdges = new THREE.EdgesGeometry(podiumGeo);
+            const podiumLine = new THREE.LineSegments(
+                podiumEdges,
+                new THREE.LineBasicMaterial({ color: 0x00f5ff, transparent: true, opacity: 0.6 })
+            );
+            podium.add(podiumLine);
             sceneS.add(podium);
 
-            // floor reflection plane
+            // floor reflection plane - dark with subtle glow
             const planeGeo = new THREE.CircleGeometry(20, 32);
-            const planeMat = new THREE.MeshBasicMaterial({ color: 0x030612 });
+            const planeMat = new THREE.MeshBasicMaterial({ color: 0x050508 });
             const plane = new THREE.Mesh(planeGeo, planeMat);
             plane.rotation.x = -Math.PI / 2;
             plane.position.y = -1;
@@ -4307,52 +4421,68 @@
             }
             playerGeometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
         } catch (e) { console.warn('Failed to generate UVs for player geometry', e); }
-        // Base color for original solid color player
-        const baseColor = 0xff3b3b;
+        // Base color for neon cyan player
+        const baseColor = 0x00f5ff;
         // Accent/fallback color used when restoring player gradient on restart
-        const accentColor = 0xff6b6b;
+        const accentColor = 0x00f5ff;
         const playerMaterial = new THREE.MeshStandardMaterial({ 
-            color: baseColor,
+            color: 0x0a0a12,
             emissive: baseColor,
-            emissiveIntensity: 0.08,
-            metalness: 0.5,
-            roughness: 0.3
+            emissiveIntensity: 0.3,
+            metalness: 0.8,
+            roughness: 0.2,
+            transparent: true,
+            opacity: 0.9
         });
         const player = new THREE.Mesh(playerGeometry, playerMaterial);
         player.userData.rotationSpeed = 0.02;
         // Collision radius for solidity
         player.userData.collisionRadius = 0.9;
+        
+        // Add wireframe outline for hollow neon effect
+        const wireframeMaterial = new THREE.MeshBasicMaterial({ 
+            color: baseColor, 
+            wireframe: true,
+            transparent: true,
+            opacity: 0.8
+        });
+        const wireframe = new THREE.Mesh(playerGeometry.clone(), wireframeMaterial);
+        wireframe.scale.setScalar(1.02);
+        player.add(wireframe);
+        
         scene.add(player);
         gameState.player = player;
         
-        // Add player glow ring
+        // Add player glow ring - neon cyan
         const glowRing = new THREE.Mesh(
-            new THREE.RingGeometry(0.8, 1, 32),
+            new THREE.RingGeometry(0.7, 0.75, 32),
             new THREE.MeshBasicMaterial({ 
-                color: 0xff3b3b, 
+                color: 0x00f5ff, 
                 transparent: true, 
-                opacity: 0.3,
+                opacity: 0.5,
                 side: THREE.DoubleSide
             })
         );
         glowRing.position.z = -0.1;
         player.add(glowRing);
         
-        // Create arena floor - large enough to cover screen
+        // Create arena floor - large enough to cover screen - dark with subtle color
         const floorGeometry = new THREE.PlaneGeometry(200, 200);
         const floorMaterial = new THREE.MeshStandardMaterial({ 
-            color: 0x1a1a2e,
+            color: 0x050508,
             transparent: true,
-            opacity: 0.5
+            opacity: 0.95
         });
         const floor = new THREE.Mesh(floorGeometry, floorMaterial);
         floor.position.z = -0.5;
         scene.add(floor);
         
-        // Add grid - spans entire screen
-        const gridHelper = new THREE.GridHelper(200, 100, 0x333355, 0x222244);
+        // Add grid - neon cyan grid lines for hollow theme
+        const gridHelper = new THREE.GridHelper(200, 80, 0x00f5ff, 0x001a1a);
         gridHelper.rotation.x = Math.PI / 2;
         gridHelper.position.z = -0.49;
+        gridHelper.material.opacity = 0.15;
+        gridHelper.material.transparent = true;
         scene.add(gridHelper);
         
         // Initialize managers
@@ -4501,85 +4631,96 @@
             const waveScale = 1 + (gameState.currentWave - 1) * 0.15;
             
             if (enemyType === 'boss') {
-                // Boss: Large dodecahedron, glowing yellow, high HP and damage
+                // Boss: Large dodecahedron, glowing neon yellow, high HP and damage
                 enemyGeometry = new THREE.DodecahedronGeometry(1.2, 0);
                 enemyMaterial = new THREE.MeshStandardMaterial({ 
-                    color: 0xfbbf24,
-                    emissive: 0xf59e0b,
-                    emissiveIntensity: 0.5,
+                    color: 0x0a0a12,
+                    emissive: 0xffff00,
+                    emissiveIntensity: 0.4,
                     transparent: true,
-                    opacity: 1
+                    opacity: 0.9
                 });
             } else if (enemyType === 'melee') {
-                // Melee: Tetrahedron, green, fast, normal HP
+                // Melee: Tetrahedron, neon green, fast, normal HP
                 enemyGeometry = new THREE.TetrahedronGeometry(0.5, 0);
                 enemyMaterial = new THREE.MeshStandardMaterial({ 
-                    color: 0x4ade80,
-                    emissive: 0x22ff66,
-                    emissiveIntensity: 0.2,
-                    transparent: true,
-                    opacity: 1
-                });
-            } else if (enemyType === 'ranged') {
-                // Ranged: Octahedron, blue/purple, medium speed, low HP
-                enemyGeometry = new THREE.OctahedronGeometry(0.4, 0);
-                enemyMaterial = new THREE.MeshStandardMaterial({ 
-                    color: 0xa855f7,
-                    emissive: 0x9333ea,
+                    color: 0x0a0a12,
+                    emissive: 0x00ff88,
                     emissiveIntensity: 0.3,
                     transparent: true,
-                    opacity: 1
+                    opacity: 0.9
+                });
+            } else if (enemyType === 'ranged') {
+                // Ranged: Octahedron, neon magenta, medium speed, low HP
+                enemyGeometry = new THREE.OctahedronGeometry(0.4, 0);
+                enemyMaterial = new THREE.MeshStandardMaterial({ 
+                    color: 0x0a0a12,
+                    emissive: 0xff00ff,
+                    emissiveIntensity: 0.35,
+                    transparent: true,
+                    opacity: 0.9
                 });
             } else if (enemyType === 'invisible') {
-                // Invisible: Icosahedron, purple, semi-transparent, medium HP
+                // Invisible: Icosahedron, neon purple, semi-transparent, medium HP
                 enemyGeometry = new THREE.IcosahedronGeometry(0.45, 0);
                 enemyMaterial = new THREE.MeshStandardMaterial({ 
-                    color: 0x8b5cf6,
-                    emissive: 0x7c3aed,
+                    color: 0x0a0a12,
+                    emissive: 0x9933ff,
                     emissiveIntensity: 0.4,
                     transparent: true,
                     opacity: 0
                 });
             } else if (enemyType === 'speed') {
-                // Speed: Cone, orange, very fast, low HP
+                // Speed: Cone, neon orange, very fast, low HP
                 enemyGeometry = new THREE.ConeGeometry(0.4, 0.8, 4);
                 enemyMaterial = new THREE.MeshStandardMaterial({ 
-                    color: 0xfb923c,
-                    emissive: 0xf97316,
-                    emissiveIntensity: 0.5,
+                    color: 0x0a0a12,
+                    emissive: 0xff6600,
+                    emissiveIntensity: 0.45,
                     transparent: true,
-                    opacity: 1
+                    opacity: 0.9
                 });
             } else {
-                // Tank: Box, red, slow, high HP
+                // Tank: Box, neon red, slow, high HP
                 enemyGeometry = new THREE.BoxGeometry(0.7, 0.7, 0.7);
                 enemyMaterial = new THREE.MeshStandardMaterial({ 
-                    color: 0xef4444,
-                    emissive: 0xdc2626,
-                    emissiveIntensity: 0.3,
+                    color: 0x0a0a12,
+                    emissive: 0xff3366,
+                    emissiveIntensity: 0.35,
                     transparent: true,
-                    opacity: 1
+                    opacity: 0.9
                 });
             }
             // Additional types: shield, healer, suicide, sniper, phaser
             if (enemyType === 'shield') {
                 enemyGeometry = new THREE.OctahedronGeometry(0.6, 0);
-                enemyMaterial = new THREE.MeshStandardMaterial({ color: 0x93c5fd, emissive: 0x60a5fa, emissiveIntensity: 0.3 });
+                enemyMaterial = new THREE.MeshStandardMaterial({ color: 0x0a0a12, emissive: 0x00bfff, emissiveIntensity: 0.35, transparent: true, opacity: 0.9 });
             } else if (enemyType === 'healer') {
                 enemyGeometry = new THREE.DodecahedronGeometry(0.6, 0);
-                enemyMaterial = new THREE.MeshStandardMaterial({ color: 0x34d399, emissive: 0x10b981, emissiveIntensity: 0.3 });
+                enemyMaterial = new THREE.MeshStandardMaterial({ color: 0x0a0a12, emissive: 0x00ff88, emissiveIntensity: 0.35, transparent: true, opacity: 0.9 });
             } else if (enemyType === 'suicide') {
                 enemyGeometry = new THREE.ConeGeometry(0.45, 0.9, 6);
-                enemyMaterial = new THREE.MeshStandardMaterial({ color: 0xff7b7b, emissive: 0xff3b3b, emissiveIntensity: 0.4 });
+                enemyMaterial = new THREE.MeshStandardMaterial({ color: 0x0a0a12, emissive: 0xff3366, emissiveIntensity: 0.5, transparent: true, opacity: 0.9 });
             } else if (enemyType === 'sniper') {
                 enemyGeometry = new THREE.BoxGeometry(0.6, 0.6, 0.6);
-                enemyMaterial = new THREE.MeshStandardMaterial({ color: 0x6ee7b7, emissive: 0x34d399, emissiveIntensity: 0.3 });
+                enemyMaterial = new THREE.MeshStandardMaterial({ color: 0x0a0a12, emissive: 0x00ffaa, emissiveIntensity: 0.35, transparent: true, opacity: 0.9 });
             } else if (enemyType === 'phaser') {
                 enemyGeometry = new THREE.TorusGeometry(0.5, 0.15, 8, 16);
-                enemyMaterial = new THREE.MeshStandardMaterial({ color: 0x60a5fa, emissive: 0x2563eb, emissiveIntensity: 0.4 });
+                enemyMaterial = new THREE.MeshStandardMaterial({ color: 0x0a0a12, emissive: 0x00f5ff, emissiveIntensity: 0.45, transparent: true, opacity: 0.9 });
             }
             
             const enemy = new THREE.Mesh(enemyGeometry, enemyMaterial);
+            
+            // Add wireframe outline for hollow neon effect on enemies
+            const enemyWireframeMat = new THREE.MeshBasicMaterial({ 
+                color: enemyMaterial.emissive, 
+                wireframe: true,
+                transparent: true,
+                opacity: 0.6
+            });
+            const enemyWireframe = new THREE.Mesh(enemyGeometry.clone(), enemyWireframeMat);
+            enemyWireframe.scale.setScalar(1.02);
+            enemy.add(enemyWireframe);
             
             // Spawn at random edge - just off-screen so enemies arrive quickly
             const side = Math.floor(Math.random() * 4);
