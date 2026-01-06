@@ -72,6 +72,7 @@ users = db.users
 messages = db.messages
 conversations = db.conversations
 game_saves = db.game_saves  # For Combat Arena game saves
+game_users = db.game_users  # Separate accounts for Combat Arena game
 
 bcrypt = Bcrypt(app)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
@@ -842,6 +843,69 @@ def handle_typing(data):
 
 # ==================== COMBAT ARENA GAME API ====================
 
+# Separate auth system for the game
+@app.route('/api/game/auth/register', methods=['POST'])
+def game_register():
+    """Register a new game account (separate from texting app)"""
+    data = request.get_json()
+    username = data.get('username', '').strip().lower()
+    display_name = data.get('display_name', '').strip()
+    password = data.get('password', '')
+    
+    # Validation
+    if not username or not password:
+        return jsonify({'success': False, 'error': 'Username and password required'}), 400
+    
+    if len(username) < 3:
+        return jsonify({'success': False, 'error': 'Username must be at least 3 characters'}), 400
+    
+    if len(password) < 4:
+        return jsonify({'success': False, 'error': 'Password must be at least 4 characters'}), 400
+    
+    # Check if username exists
+    if game_users.find_one({'username': username}):
+        return jsonify({'success': False, 'error': 'Username already taken'}), 400
+    
+    # Create account
+    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+    result = game_users.insert_one({
+        'username': username,
+        'display_name': display_name or username,
+        'password': hashed_password,
+        'created_at': datetime.now(UTC)
+    })
+    
+    user_id = str(result.inserted_id)
+    
+    return jsonify({
+        'success': True,
+        'user_id': user_id,
+        'username': username,
+        'display_name': display_name or username
+    })
+
+@app.route('/api/game/auth/login', methods=['POST'])
+def game_login():
+    """Login to game account (separate from texting app)"""
+    data = request.get_json()
+    username = data.get('username', '').strip().lower()
+    password = data.get('password', '')
+    
+    if not username or not password:
+        return jsonify({'success': False, 'error': 'Username and password required'}), 400
+    
+    user = game_users.find_one({'username': username})
+    
+    if not user or not bcrypt.check_password_hash(user['password'], password):
+        return jsonify({'success': False, 'error': 'Invalid username or password'}), 401
+    
+    return jsonify({
+        'success': True,
+        'user_id': str(user['_id']),
+        'username': user['username'],
+        'display_name': user.get('display_name', username)
+    })
+
 @app.route('/api/game/save', methods=['POST'])
 def save_game():
     """Save game state for a user"""
@@ -920,7 +984,10 @@ def get_leaderboard():
     
     leaderboard = []
     for save in top_saves:
-        user = users.find_one({'_id': ObjectId(save['user_id'])})
+        # Try game_users first (new system), fall back to texting app users
+        user = game_users.find_one({'_id': ObjectId(save['user_id'])})
+        if not user:
+            user = users.find_one({'_id': ObjectId(save['user_id'])})
         if user:
             leaderboard.append({
                 'display_name': user.get('display_name', 'Unknown'),

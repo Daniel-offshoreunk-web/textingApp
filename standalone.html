@@ -883,14 +883,16 @@
                     const controller = new AbortController();
                     const timeout = setTimeout(() => controller.abort(), 8000);
                     
-                    // Use health endpoint without credentials for iframe CORS compatibility
+                    // Use no-cors mode to avoid CORS blocks from null/blob origins
+                    // We can't read the response, but a successful fetch means server is up
                     const res = await fetch(`${API_BASE}/api/health`, {
                         signal: controller.signal,
-                        mode: 'cors'
+                        mode: 'no-cors'
                     });
                     clearTimeout(timeout);
                     
-                    if (res.ok) {
+                    // With no-cors, res.type is 'opaque' and res.ok is false, but no exception means success
+                    if (res.type === 'opaque' || res.ok) {
                         serverReady = true;
                         clearInterval(progressInterval);
                         progressBar.style.width = '100%';
@@ -1464,13 +1466,13 @@
             initChat();
         }
     </script>
-    <!-- Fullscreen toggle button -->
-    <button id="fsBtn" aria-label="Toggle Fullscreen" title="Toggle Fullscreen" style="display:none;">⤢</button>
+    <!-- Launch in new tab button -->
+    <button id="launchBtn" aria-label="Open in new tab" title="Open in new tab" style="display:none;">Open in New Tab</button>
     <script>
     (function(){
-        const btn = document.getElementById('fsBtn');
+        const btn = document.getElementById('launchBtn');
         if(!btn) return;
-        // basic styling applied via JS to keep patch small
+        // basic styling applied via JS to keep patch small and match previous placement
         Object.assign(btn.style, {
             position: 'fixed',
             left: '12px',
@@ -1481,63 +1483,80 @@
             border: 'none',
             padding: '10px 12px',
             borderRadius: '10px',
-            fontSize: '18px',
+            fontSize: '16px',
             cursor: 'pointer',
             backdropFilter: 'blur(6px)'
         });
-
-        function isFullscreen(){
-            return document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-        }
-
-        function toggleFullscreen(){
-            const el = document.documentElement;
-            if(!isFullscreen()){
-                if(el.requestFullscreen) el.requestFullscreen();
-                else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-                else if(el.mozRequestFullScreen) el.mozRequestFullScreen();
-            } else {
-                if(document.exitFullscreen) document.exitFullscreen();
-                else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
-                else if(document.mozCancelFullScreen) document.mozCancelFullScreen();
-            }
-        }
 
         // Show button when DOM ready
         if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ()=>{ btn.style.display = 'block'; });
         else btn.style.display = 'block';
 
-        btn.addEventListener('click', toggleFullscreen);
-        // Update label on fullscreen change
-        ['fullscreenchange','webkitfullscreenchange','mozfullscreenchange','MSFullscreenChange'].forEach(ev => document.addEventListener(ev, ()=>{
-            btn.textContent = isFullscreen() ? '⤢' : '⤢';
-        }));
-
-        // Attempt to auto-enter fullscreen on load. If blocked by browser, enter on first user gesture.
-        async function requestFS() {
-            const el = document.documentElement;
-            const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
-            if (!req) return;
-            try {
-                await req.call(el);
-            } catch (e) {
-                // blocked or failed
+        btn.addEventListener('click', async () => {
+            const newWin = window.open('about:blank', '_blank');
+            if(!newWin) {
+                alert('Popup blocked. Please allow popups to open the app in a new tab.');
+                return;
             }
-        }
 
-        function tryAutoFullscreen() {
-            requestFS();
-            // If not fullscreen yet, wait for first user gesture
-            setTimeout(() => {
-                if (!isFullscreen()) {
-                    const onFirst = async () => { await requestFS(); };
-                    document.addEventListener('pointerdown', onFirst, { once: true });
+            // Helper to navigate the new window to a blob or data URL containing the HTML
+            const navigateWithHtml = (html) => {
+                try {
+                    const blob = new Blob([html], { type: 'text/html' });
+                    const url = URL.createObjectURL(blob);
+                    newWin.location.href = url;
+                    newWin.focus();
+                    // Revoke after a short delay to allow navigation
+                    setTimeout(() => URL.revokeObjectURL(url), 2000);
+                    return true;
+                } catch (e) {
+                    try {
+                        newWin.location.href = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
+                        newWin.focus();
+                        return true;
+                    } catch (err) {
+                        return false;
+                    }
                 }
-            }, 400);
-        }
+            };
 
-        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tryAutoFullscreen);
-        else tryAutoFullscreen();
+            try {
+                // First try to fetch the dedicated standalone file (game_standalone.html)
+                const standaloneRes = await fetch('game_standalone.html', { cache: 'no-store' });
+                if (standaloneRes.ok) {
+                    const html = await standaloneRes.text();
+                    if (navigateWithHtml(html)) return;
+                }
+            } catch (err) {
+                // ignore and fall through to try window.location
+            }
+
+            try {
+                // Fallback: try to fetch the current page HTML
+                const res = await fetch(window.location.href, { cache: 'no-store', credentials: 'same-origin' });
+                if (res.ok) {
+                    const html = await res.text();
+                    if (navigateWithHtml(html)) return;
+                }
+            } catch (err) {
+                // ignore and fall through to DOM serialization
+            }
+
+            // Fallback: serialize current DOM
+            try {
+                const html = '<!doctype html>' + document.documentElement.outerHTML;
+                if (!navigateWithHtml(html)) throw new Error('navigation failed');
+            } catch (e) {
+                try {
+                    newWin.document.open();
+                    newWin.document.write('<!doctype html>' + document.documentElement.outerHTML);
+                    newWin.document.close();
+                } catch (e2) {
+                    newWin.close();
+                    alert('Failed to open the app in a new tab.');
+                }
+            }
+        });
     })();
     </script>
 </body>

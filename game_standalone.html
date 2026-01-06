@@ -1379,7 +1379,8 @@
         </div>
         <div class="wake-tip" id="wakeTip">Free servers sleep after inactivity. Waking up usually takes 10-30 seconds.</div>
         <button class="wake-retry-btn" id="wakeRetryBtn" onclick="startServerWake()">Retry Connection</button>
-        <button class="wake-retry-btn" id="offlineVersionBtn" onclick="downloadOfflineVersion()" style="background:linear-gradient(90deg,#6366f1,#8b5cf6); margin-top:10px;">📥 Download Offline Version</button>
+        <button class="wake-retry-btn" id="playOfflineBtn" onclick="playOffline()" style="display:block; background:linear-gradient(90deg,#10b981,#059669); margin-top:10px;">🎮 Play Offline</button>
+        <button class="wake-retry-btn" id="offlineVersionBtn" onclick="downloadOfflineVersion()" style="display:block; background:linear-gradient(90deg,#6366f1,#8b5cf6); margin-top:10px;">📥 Download Offline Version</button>
     </div>
 
     <!-- Auth Screen -->
@@ -1403,7 +1404,6 @@
             <div id="registerForm" class="auth-form">
                 <input type="text" class="auth-input" id="regUsername" placeholder="Username">
                 <input type="text" class="auth-input" id="regDisplayName" placeholder="Display Name">
-                <input type="email" class="auth-input" id="regEmail" placeholder="Email">
                 <input type="password" class="auth-input" id="regPassword" placeholder="Password">
                 <button class="auth-btn" onclick="doRegister()">Register</button>
             </div>
@@ -2617,14 +2617,16 @@
                     const controller = new AbortController();
                     const timeout = setTimeout(() => controller.abort(), 8000);
                     
-                    // Use health endpoint without credentials for iframe CORS compatibility
+                    // Use no-cors mode to avoid CORS blocks from null/blob origins
+                    // We can't read the response, but a successful fetch means server is up
                     const res = await fetch(`${API_BASE}/api/health`, {
                         signal: controller.signal,
-                        mode: 'cors'
+                        mode: 'no-cors'
                     });
                     clearTimeout(timeout);
                     
-                    if (res.ok) {
+                    // With no-cors, res.type is 'opaque' and res.ok is false, but no exception means success
+                    if (res.type === 'opaque' || res.ok) {
                         serverReady = true;
                         clearInterval(progressInterval);
                         progressBar.style.width = '100%';
@@ -2696,7 +2698,7 @@
             }
             
             try {
-                const res = await fetch(`${API_BASE}/api/login`, {
+                const res = await fetch(`${API_BASE}/api/game/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -2726,17 +2728,17 @@
             const email = document.getElementById('regEmail').value.trim();
             const password = document.getElementById('regPassword').value;
             
-            if (!username || !displayName || !email || !password) {
-                showAuthError('Please fill in all fields');
+            if (!username || !displayName || !password) {
+                showAuthError('Please fill in username, display name, and password');
                 return;
             }
             
             try {
-                const res = await fetch(`${API_BASE}/api/register`, {
+                const res = await fetch(`${API_BASE}/api/game/auth/register`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({ username, display_name: displayName, email, password })
+                    body: JSON.stringify({ username, display_name: displayName, password })
                 });
                 const data = await res.json();
                 
@@ -2762,6 +2764,30 @@
             onAuthSuccess();
         }
         
+        // Play offline - skip wake-up and auth, use localStorage only
+        function playOffline() {
+            document.getElementById('serverWakeScreen').classList.add('hidden');
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('userInfo').classList.add('hidden');
+            currentUser = null;
+            isGuest = true;
+            // Load from localStorage if available
+            try {
+                const saved = localStorage.getItem('tbd_game_save');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    if (data.coins !== undefined) gameState.coins = data.coins;
+                    if (data.highestWaveReached !== undefined) gameState.highestWaveReached = data.highestWaveReached;
+                    if (data.unlockedClasses) unlockedClasses = new Set(data.unlockedClasses);
+                    if (data.classShards) classShards = data.classShards;
+                    if (data.classLevels) classLevels = data.classLevels;
+                    console.log('Loaded offline save from localStorage');
+                }
+            } catch (e) { console.warn('Could not load offline save:', e); }
+            // Show home screen
+            document.getElementById('homeScreen').style.display = 'flex';
+        }
+        
         function doLogout() {
             currentUser = null;
             isGuest = false;
@@ -2785,31 +2811,43 @@
         }
         
         // ==================== CLOUD SAVE FUNCTIONS ====================
+        function buildSaveData() {
+            return {
+                coins: gameState.coins,
+                highestWaveReached: gameState.highestWaveReached,
+                totalKills: questStats.totalKills || 0,
+                unlockedClasses: Array.isArray(unlockedClasses) ? unlockedClasses : Array.from(unlockedClasses || []),
+                classShards: classShards,
+                classLevels: classLevels,
+                classExp: classExp,
+                questStats: questStats,
+                freeBasicSummons: gameState.freeBasicSummons || 0,
+                freeGoldSummons: gameState.freeGoldSummons || 0,
+                firstSummonDone: firstSummonDone
+            };
+        }
+        
+        // Save to localStorage (always, for offline backup)
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem('tbd_game_save', JSON.stringify(buildSaveData()));
+            } catch (e) { console.warn('Could not save to localStorage:', e); }
+        }
+        
         async function saveGameToServer() {
+            // Always save to localStorage as backup
+            saveToLocalStorage();
+            
             if (!currentUser || isGuest) return;
             
             try {
-                const saveData = {
-                    coins: gameState.coins,
-                    highestWaveReached: gameState.highestWaveReached,
-                    totalKills: questStats.totalKills || 0,
-                    unlockedClasses: unlockedClasses,
-                    classShards: classShards,
-                    classLevels: classLevels,
-                    classExp: classExp,
-                    questStats: questStats,
-                    freeBasicSummons: gameState.freeBasicSummons || 0,
-                    freeGoldSummons: gameState.freeGoldSummons || 0,
-                    firstSummonDone: firstSummonDone
-                };
-                
                 await fetch(`${API_BASE}/api/game/save`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify({
                         user_id: currentUser.id,
-                        game_data: saveData
+                        game_data: buildSaveData()
                     })
                 });
                 console.log('Game saved to cloud');
@@ -2856,18 +2894,16 @@
         // Debounced save - triggers save after data changes with 2 second delay
         let saveTimeout = null;
         function triggerSave() {
-            if (!currentUser || isGuest) return;
             if (saveTimeout) clearTimeout(saveTimeout);
             saveTimeout = setTimeout(() => {
-                saveGameToServer();
+                saveGameToServer(); // This now always saves to localStorage, and to cloud if logged in
             }, 2000); // 2 second debounce
         }
         
         // Immediate save for critical changes (class unlocks, purchases)
         function triggerImmediateSave() {
-            if (!currentUser || isGuest) return;
             if (saveTimeout) clearTimeout(saveTimeout);
-            saveGameToServer();
+            saveGameToServer(); // This now always saves to localStorage, and to cloud if logged in
         }
     </script>
     
