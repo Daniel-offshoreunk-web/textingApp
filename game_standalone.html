@@ -3798,19 +3798,27 @@
                 rendererS.domElement.style.display = 'block';
                 rendererS.domElement.style.width = '100%';
                 rendererS.domElement.style.height = '100%';
-                rendererS.domElement.style.position = 'relative';
+                rendererS.domElement.style.position = 'absolute';
+                rendererS.domElement.style.top = '0';
+                rendererS.domElement.style.left = '0';
                 rendererS.domElement.style.zIndex = '5';
                 console.log('[Summon] appended canvas, set styles');
             } catch (e) { console.warn('[Summon] style set failed', e); }
 
             // Handle container resize to keep renderer in sync
+            let lastW = 0, lastH = 0;
             const resizeObserver = new ResizeObserver(() => {
                 try {
                     const w = container.clientWidth || Math.max(1, Math.round(window.innerWidth * 0.5));
                     const h = container.clientHeight || Math.max(1, Math.round(window.innerHeight * 0.4));
-                    rendererS.setSize(w, h);
-                    if (summonCtx && summonCtx.camera) summonCtx.camera.aspect = w / h;
-                    if (summonCtx && summonCtx.camera) summonCtx.camera.updateProjectionMatrix();
+                    // Only resize if dimensions actually changed to prevent feedback loop
+                    if (w !== lastW || h !== lastH) {
+                        lastW = w;
+                        lastH = h;
+                        rendererS.setSize(w, h, false); // false = don't update canvas style
+                        if (summonCtx && summonCtx.camera) summonCtx.camera.aspect = w / h;
+                        if (summonCtx && summonCtx.camera) summonCtx.camera.updateProjectionMatrix();
+                    }
                 } catch (err) { console.warn('[Summon] resizeObserver failed', err); }
             });
             try { resizeObserver.observe(container); } catch (e) { /* ignore */ }
