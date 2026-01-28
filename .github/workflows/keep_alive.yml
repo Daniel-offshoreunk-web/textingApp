@@ -1,0 +1,10 @@
+name: Keep awake
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render App
+      run: curl -s https://textingapp.onrender.com/api/simpleHealth > dev/null

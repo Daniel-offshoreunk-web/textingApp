@@ -99,6 +99,10 @@ def health_check():
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
     return response
 
+@app.route('/api/simpleHealth')
+def simpleHealth():
+    return "OK", 200
+
 # Helper function to send welcome/notification email (non-blocking)
 def send_welcome_email(email, display_name, username, deactivate_token):
     # Use app context for background thread
