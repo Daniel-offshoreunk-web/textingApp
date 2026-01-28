@@ -11,6 +11,7 @@ import os
 import sys
 import secrets
 import threading
+import time
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
@@ -73,6 +74,119 @@ messages = db.messages
 conversations = db.conversations
 game_saves = db.game_saves  # For Combat Arena game saves
 game_users = db.game_users  # Separate accounts for Combat Arena game
+
+# ------------------ Google Sheets tunneling (optional) ------------------
+# Configure via environment variables:
+# - SHEETS_ENABLED=true
+# - SHEETS_ID=<google-sheet-id>
+# - SHEETS_CREDENTIALS_JSON=<service-account-json-string>
+SHEETS_ENABLED = os.environ.get('SHEETS_ENABLED', 'false').lower() == 'true'
+SHEETS_ID = os.environ.get('SHEETS_ID')
+SHEETS_CREDENTIALS_JSON = os.environ.get('SHEETS_CREDENTIALS_JSON')
+
+sheets_client = None
+sheets_sheet = None
+
+def init_sheets():
+    global sheets_client, sheets_sheet
+    if not SHEETS_ENABLED:
+        return
+    if not SHEETS_ID or not SHEETS_CREDENTIALS_JSON:
+        print('SHEETS_ENABLED is true but SHEETS_ID or SHEETS_CREDENTIALS_JSON is missing')
+        return
+    try:
+        import json as _json
+        from google.oauth2.service_account import Credentials
+        import gspread
+
+        creds_dict = _json.loads(SHEETS_CREDENTIALS_JSON)
+        scopes = ['https://www.googleapis.com/auth/spreadsheets']
+        creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+        sheets_client = gspread.authorize(creds)
+        sheets_sheet = sheets_client.open_by_key(SHEETS_ID).sheet1
+        print('Google Sheets integration initialized')
+    except Exception as e:
+        print(f'Failed to initialize Google Sheets integration: {e}')
+
+def append_row_to_sheet(row):
+    """Append a row (list) to the configured sheet. Returns True on success."""
+    if not SHEETS_ENABLED or not sheets_sheet:
+        return False
+    try:
+        sheets_sheet.append_row(row, value_input_option='RAW')
+        return True
+    except Exception as e:
+        print(f'Failed to append row to sheet: {e}')
+        return False
+
+def poll_sheet_loop():
+    """Background loop that polls the sheet for new rows and injects them into the app.
+    Expected row format (columns): action, conversation_id, sender_id, sender_name, content
+    """
+    if not SHEETS_ENABLED or not sheets_sheet:
+        return
+
+    meta = db.get_collection('sheets_meta')
+    doc = meta.find_one({'_id': 'last_row'})
+    last_row = int(doc.get('value', 1)) if doc else 1
+
+    while SHEETS_ENABLED:
+        try:
+            all_values = sheets_sheet.get_all_values()
+            # process new rows (indices are 0-based; spreadsheet rows start at 1)
+            for idx in range(last_row, len(all_values)):
+                row = all_values[idx]
+                # expected at least 5 columns
+                if len(row) < 5:
+                    continue
+                action = row[0]
+                if action == 'send_message':
+                    conversation_id = row[1]
+                    sender_id = row[2]
+                    sender_name = row[3]
+                    content = row[4]
+
+                    # create message in MongoDB
+                    msg_doc = {
+                        'conversation_id': conversation_id,
+                        'sender_id': sender_id,
+                        'content': content,
+                        'created_at': datetime.now(UTC)
+                    }
+                    res = messages.insert_one(msg_doc)
+
+                    # broadcast via Socket.IO to conversation room
+                    try:
+                        socketio.emit('new_message', {
+                            'id': str(res.inserted_id),
+                            'conversation_id': conversation_id,
+                            'sender_id': sender_id,
+                            'sender_name': sender_name,
+                            'content': content,
+                            'created_at': msg_doc['created_at'].isoformat()
+                        }, room=conversation_id)
+                    except Exception as e:
+                        print(f'Failed to emit new_message from sheet: {e}')
+
+                # update last_row (sheet rows are 1-indexed)
+                last_row = idx + 1
+                meta.update_one({'_id': 'last_row'}, {'$set': {'value': last_row}}, upsert=True)
+
+        except Exception as e:
+            print(f'Error while polling sheet: {e}')
+
+        time.sleep(5)
+
+# Initialize sheets after app and DB ready
+try:
+    init_sheets()
+    if SHEETS_ENABLED and sheets_sheet:
+        t = threading.Thread(target=poll_sheet_loop, daemon=True)
+        t.start()
+except Exception:
+    pass
+
+# ------------------ end Google Sheets tunneling ------------------
 
 bcrypt = Bcrypt(app)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
@@ -821,6 +935,13 @@ def handle_message(data):
         'content': content,
         'created_at': datetime.now(UTC).isoformat()
     }, room=conversation_id)
+
+    # If Sheets tunneling is enabled, append this message so external consumers can read it
+    try:
+        if SHEETS_ENABLED:
+            append_row_to_sheet(['send_message', conversation_id, user_id, sender_name, content, datetime.now(UTC).isoformat()])
+    except Exception as e:
+        print(f'Failed to append outgoing message to sheet: {e}')
     
     # Notify all other participants
     for other_id in other_ids:

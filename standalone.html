@@ -705,7 +705,7 @@
         <button class="wake-retry-btn" id="wakeRetryBtn" onclick="startServerWake()">Retry Connection</button>
     </div>
 
-    <div id="API_BASE" data-url="https://textingapp.onrender.com"></div>
+    <div id="API_BASE" data-url="https://twilight-lake-7d12.offshore-unk.workers.dev"></div>
 
     <!-- Group Creation Modal -->
     <div id="groupModal" class="modal-overlay">
@@ -848,8 +848,24 @@
     </div>
 
     <script>
-        const API_BASE = 'https://textingapp.onrender.com';
+        const API_BASE = 'https://twilight-lake-7d12.offshore-unk.workers.dev';
         let socket = null;
+        /**
+         * Log network-related errors with extra context so in-page console shows reasons.
+         * op: short operation name, err: Error object, ctx: optional context object
+         */
+        function networkLog(op, err, ctx) {
+            try {
+                const info = { op, endpoint: (ctx && ctx.endpoint) || '', extra: ctx || {}, online: navigator.onLine };
+                if (err && err.name) info.errorName = err.name;
+                if (err && err.message) info.errorMessage = err.message;
+                if (err && err.stack) info.stack = err.stack;
+                // Print a structured object and a concise message
+                console.error(`[Network:${op}]`, info);
+            } catch (e) {
+                try { console.error('networkLog failed', e); } catch (_) {}
+            }
+        }
         let currentUser = null;
         let currentConversationId = null;
         let typingTimeout = null;
@@ -904,7 +920,7 @@
                         return;
                     }
                 } catch (e) {
-                    // Server still waking up
+                        networkLog('Server wake attempt', e, { attempts, endpoint: `${API_BASE}/api/health` });
                 }
                 
                 await new Promise(r => setTimeout(r, 2000));
@@ -957,6 +973,7 @@
                     showError('loginError', data.error || 'Invalid credentials');
                 }
             } catch (err) {
+                networkLog('Login', err, { endpoint: `${API_BASE}/api/auth/login` });
                 document.getElementById('loginBtn').disabled = false;
                 document.getElementById('loginBtn').textContent = 'Login';
                 showError('loginError', 'Connection error. Please try again.');
@@ -997,6 +1014,7 @@
                     showError('registerError', data.error || 'Registration failed');
                 }
             } catch (err) {
+                networkLog('Register', err, { endpoint: `${API_BASE}/api/auth/register` });
                 document.getElementById('registerBtn').disabled = false;
                 document.getElementById('registerBtn').textContent = 'Create Account';
                 showError('registerError', 'Connection error. Please try again.');
@@ -1124,7 +1142,7 @@
                 
                 list.innerHTML = dmHeaderHtml + dmHtml + groupHeaderHtml + groupHtml;
             } catch (err) {
-                console.error('Failed to load conversations:', err);
+                networkLog('Load conversations', err, { endpoint: `${API_BASE}/api/conversations` });
             }
         }
 
@@ -1157,7 +1175,7 @@
                     }
                     results.classList.add('active');
                 } catch (err) {
-                    console.error('Search error:', err);
+                    networkLog('User search', err, { endpoint: `${API_BASE}/api/search_users?q=${encodeURIComponent(query)}` });
                 }
             }
             
@@ -1188,7 +1206,7 @@
                 openConversation(data.conversation_id, displayName, userId);
                 loadConversations();
             } catch (err) {
-                console.error('Failed to start conversation:', err);
+                networkLog('Start conversation', err, { endpoint: `${API_BASE}/api/start_conversation` });
             }
         }
 
@@ -1223,7 +1241,7 @@
                 `).join('');
                 list.scrollTop = list.scrollHeight;
             } catch (err) {
-                console.error('Failed to load messages:', err);
+                networkLog('Load messages', err, { endpoint: `${API_BASE}/api/messages/${conversationId}` });
             }
             
             loadConversations();
@@ -1368,7 +1386,7 @@
                     }
                     results.classList.add('active');
                 } catch (err) {
-                    console.error('Search error:', err);
+                    networkLog('Group member search', err, { endpoint: `${API_BASE}/api/search_users?q=${encodeURIComponent(query)}` });
                 }
             });
         }
@@ -1413,6 +1431,7 @@
                     showError('groupError', data.error || 'Failed to create group');
                 }
             } catch (err) {
+                networkLog('Create group', err, { endpoint: `${API_BASE}/api/create_group`, groupName });
                 document.getElementById('createGroupBtn').disabled = false;
                 document.getElementById('createGroupBtn').textContent = 'Create Group';
                 showError('groupError', 'Connection error. Please try again.');
@@ -1448,7 +1467,7 @@
                 `).join('');
                 list.scrollTop = list.scrollHeight;
             } catch (err) {
-                console.error('Failed to load messages:', err);
+                networkLog('Load messages', err, { endpoint: `${API_BASE}/api/messages/${conversationId}` });
             }
             
             loadConversations();
@@ -1466,24 +1485,38 @@
             initChat();
         }
     </script>
-    <!-- Launch in new tab button -->
-    <button id="launchBtn" aria-label="Open in new tab" title="Open in new tab" style="display:none;">Open in New Tab</button>
+    <!-- In-page console toggle (small, non-intrusive) -->
+    <button id="consoleToggle" aria-label="Toggle Console" title="Console" style="display:none;">Console</button>
+    <div id="inpageConsole" style="display:none; position:fixed; right:12px; bottom:60px; z-index:200001; width:420px; height:260px; background:rgba(0,0,0,0.88); color:#e6e6e6; font-family:monospace; font-size:13px; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.6); overflow:auto; padding:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <div style="font-weight:600;">Console</div>
+            <div>
+                <button id="consoleClear" style="margin-right:6px;">Clear</button>
+                <button id="consoleClose">Close</button>
+            </div>
+        </div>
+        <div id="consoleContent" style="white-space:pre-wrap; overflow:auto; max-height:200px;"></div>
+    </div>
     <script>
     (function(){
-        const btn = document.getElementById('launchBtn');
-        if(!btn) return;
-        // basic styling applied via JS to keep patch small and match previous placement
+        const btn = document.getElementById('consoleToggle');
+        const panel = document.getElementById('inpageConsole');
+        const content = document.getElementById('consoleContent');
+        const clearBtn = document.getElementById('consoleClear');
+        const closeBtn = document.getElementById('consoleClose');
+        if(!btn || !panel || !content) return;
+
         Object.assign(btn.style, {
             position: 'fixed',
-            left: '12px',
-            bottom: 'calc(env(safe-area-inset-bottom, 12px) + 18px)',
+            right: '12px',
+            bottom: '12px',
             zIndex: 200000,
             background: 'rgba(0,0,0,0.6)',
             color: '#fff',
             border: 'none',
-            padding: '10px 12px',
-            borderRadius: '10px',
-            fontSize: '16px',
+            padding: '8px 10px',
+            borderRadius: '8px',
+            fontSize: '14px',
             cursor: 'pointer',
             backdropFilter: 'blur(6px)'
         });
@@ -1492,71 +1525,31 @@
         if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ()=>{ btn.style.display = 'block'; });
         else btn.style.display = 'block';
 
-        btn.addEventListener('click', async () => {
-            const newWin = window.open('about:blank', '_blank');
-            if(!newWin) {
-                alert('Popup blocked. Please allow popups to open the app in a new tab.');
-                return;
-            }
-
-            // Helper to navigate the new window to a blob or data URL containing the HTML
-            const navigateWithHtml = (html) => {
-                try {
-                    const blob = new Blob([html], { type: 'text/html' });
-                    const url = URL.createObjectURL(blob);
-                    newWin.location.href = url;
-                    newWin.focus();
-                    // Revoke after a short delay to allow navigation
-                    setTimeout(() => URL.revokeObjectURL(url), 2000);
-                    return true;
-                } catch (e) {
-                    try {
-                        newWin.location.href = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
-                        newWin.focus();
-                        return true;
-                    } catch (err) {
-                        return false;
-                    }
-                }
-            };
-
+        const appendLine = (type, args) => {
             try {
-                // First try to fetch the dedicated standalone file (game_standalone.html)
-                const standaloneRes = await fetch('game_standalone.html', { cache: 'no-store' });
-                if (standaloneRes.ok) {
-                    const html = await standaloneRes.text();
-                    if (navigateWithHtml(html)) return;
-                }
-            } catch (err) {
-                // ignore and fall through to try window.location
-            }
+                const time = new Date().toLocaleTimeString();
+                const line = `[${time}] ${type}: ${Array.from(args).map(a=>{
+                    try { return (typeof a === 'object') ? JSON.stringify(a) : String(a); } catch(e){ return String(a); }
+                }).join(' ')}\n`;
+                content.textContent += line;
+                panel.scrollTop = panel.scrollHeight;
+            } catch(e) {}
+        };
 
-            try {
-                // Fallback: try to fetch the current page HTML
-                const res = await fetch(window.location.href, { cache: 'no-store', credentials: 'same-origin' });
-                if (res.ok) {
-                    const html = await res.text();
-                    if (navigateWithHtml(html)) return;
-                }
-            } catch (err) {
-                // ignore and fall through to DOM serialization
-            }
+        // Preserve originals
+        const orig = { log: console.log, info: console.info, warn: console.warn, error: console.error };
+        console.log = function(){ try { orig.log.apply(console, arguments); } catch(e){}; appendLine('LOG', arguments); };
+        console.info = function(){ try { orig.info.apply(console, arguments); } catch(e){}; appendLine('INFO', arguments); };
+        console.warn = function(){ try { orig.warn.apply(console, arguments); } catch(e){}; appendLine('WARN', arguments); };
+        console.error = function(){ try { orig.error.apply(console, arguments); } catch(e){}; appendLine('ERROR', arguments); };
 
-            // Fallback: serialize current DOM
-            try {
-                const html = '<!doctype html>' + document.documentElement.outerHTML;
-                if (!navigateWithHtml(html)) throw new Error('navigation failed');
-            } catch (e) {
-                try {
-                    newWin.document.open();
-                    newWin.document.write('<!doctype html>' + document.documentElement.outerHTML);
-                    newWin.document.close();
-                } catch (e2) {
-                    newWin.close();
-                    alert('Failed to open the app in a new tab.');
-                }
-            }
+        btn.addEventListener('click', ()=>{
+            if(panel.style.display === 'none' || panel.style.display === '') panel.style.display = 'block';
+            else panel.style.display = 'none';
         });
+
+        clearBtn.addEventListener('click', ()=>{ content.textContent = ''; });
+        closeBtn.addEventListener('click', ()=>{ panel.style.display = 'none'; });
     })();
     </script>
 </body>
