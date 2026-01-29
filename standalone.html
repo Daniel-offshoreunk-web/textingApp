@@ -849,6 +849,52 @@
 
     <script>
         const API_BASE = 'https://twilight-lake-7d12.offshore-unk.workers.dev';
+        // Client identifier for sheet-based tunneling
+        function getClientId(){
+            let id = localStorage.getItem('client_id');
+            if(!id){
+                id = 'client_' + Math.random().toString(36).slice(2,10) + Date.now().toString(36);
+                localStorage.setItem('client_id', id);
+            }
+            return id;
+        }
+
+        const CLIENT_ID = getClientId();
+
+        // Send a request by writing a row to the sheet via the server, then poll for a response.
+        async function sendSheetRequest(path, method='POST', payload=null, timeoutMs=20000){
+            try{
+                // create a request_id
+                const request_id = 'req_' + Math.random().toString(36).slice(2,10) + Date.now().toString(36);
+
+                // send request row via server
+                const ackRes = await fetch(`${API_BASE}/sheet/request`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ request_path: path, method, payload, client_id: CLIENT_ID, request_id })
+                });
+                const ack = await ackRes.json().catch(()=>null);
+                if(!ack || !ack.success){
+                    throw new Error('Failed to write request to sheet');
+                }
+
+                // poll for response
+                const start = Date.now();
+                while(Date.now() - start < timeoutMs){
+                    await new Promise(r => setTimeout(r, 700));
+                    try{
+                        const res = await fetch(`${API_BASE}/sheet/response?client_id=${encodeURIComponent(CLIENT_ID)}&request_id=${encodeURIComponent(request_id)}`);
+                        const data = await res.json();
+                        if(data && data.success && data.responses && data.responses.length){
+                            return data.responses[0];
+                        }
+                    } catch(e){ /* continue polling */ }
+                }
+                throw new Error('Timed out waiting for sheet response');
+            }catch(err){
+                throw err;
+            }
+        }
         let socket = null;
         /**
          * Log network-related errors with extra context so in-page console shows reasons.
@@ -953,31 +999,28 @@
             document.getElementById('loginBtn').disabled = true;
             document.getElementById('loginBtn').textContent = 'Logging in...';
             
-            try {
-                const res = await fetch(`${API_BASE}/api/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ username, password })
-                });
-                const data = await res.json();
-                
-                document.getElementById('loginBtn').disabled = false;
-                document.getElementById('loginBtn').textContent = 'Login';
-                
-                if (data.success) {
-                    currentUser = data.user;
-                    localStorage.setItem('user', JSON.stringify(currentUser));
-                    initChat();
-                } else {
-                    showError('loginError', data.error || 'Invalid credentials');
+                try {
+                    const resp = await sendSheetRequest('/api/auth/login', 'POST', { username, password });
+                    document.getElementById('loginBtn').disabled = false;
+                    document.getElementById('loginBtn').textContent = 'Login';
+                    if (resp && resp.response && Number(resp.status) === 200) {
+                        const data = resp.response;
+                        if (data.success) {
+                            currentUser = data.user;
+                            localStorage.setItem('user', JSON.stringify(currentUser));
+                            initChat();
+                        } else {
+                            showError('loginError', data.error || 'Invalid credentials');
+                        }
+                    } else {
+                        showError('loginError', 'Connection error. Please try again.');
+                    }
+                } catch (err) {
+                    networkLog('Login', err, { endpoint: `${API_BASE}/sheet/request` });
+                    document.getElementById('loginBtn').disabled = false;
+                    document.getElementById('loginBtn').textContent = 'Login';
+                    showError('loginError', 'Connection error. Please try again.');
                 }
-            } catch (err) {
-                networkLog('Login', err, { endpoint: `${API_BASE}/api/auth/login` });
-                document.getElementById('loginBtn').disabled = false;
-                document.getElementById('loginBtn').textContent = 'Login';
-                showError('loginError', 'Connection error. Please try again.');
-            }
         });
 
         // Register
@@ -994,31 +1037,27 @@
             document.getElementById('registerBtn').textContent = 'Creating account...';
             
             try {
-                const res = await fetch(`${API_BASE}/api/auth/register`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ email, username, display_name, password })
-                });
-                const data = await res.json();
-                
-                document.getElementById('registerBtn').disabled = false;
-                document.getElementById('registerBtn').textContent = 'Create Account';
-                
-                if (data.success) {
-                    // Login immediately after registration
-                    currentUser = data.user;
-                    localStorage.setItem('user', JSON.stringify(currentUser));
-                    initChat();
-                } else {
-                    showError('registerError', data.error || 'Registration failed');
+                    const resp = await sendSheetRequest('/api/auth/register', 'POST', { email, username, display_name, password });
+                    document.getElementById('registerBtn').disabled = false;
+                    document.getElementById('registerBtn').textContent = 'Create Account';
+                    if (resp && resp.response && Number(resp.status) === 200) {
+                        const data = resp.response;
+                        if (data.success) {
+                            currentUser = data.user;
+                            localStorage.setItem('user', JSON.stringify(currentUser));
+                            initChat();
+                        } else {
+                            showError('registerError', data.error || 'Registration failed');
+                        }
+                    } else {
+                        showError('registerError', 'Connection error. Please try again.');
+                    }
+                } catch (err) {
+                    networkLog('Register', err, { endpoint: `${API_BASE}/sheet/request` });
+                    document.getElementById('registerBtn').disabled = false;
+                    document.getElementById('registerBtn').textContent = 'Create Account';
+                    showError('registerError', 'Connection error. Please try again.');
                 }
-            } catch (err) {
-                networkLog('Register', err, { endpoint: `${API_BASE}/api/auth/register` });
-                document.getElementById('registerBtn').disabled = false;
-                document.getElementById('registerBtn').textContent = 'Create Account';
-                showError('registerError', 'Connection error. Please try again.');
-            }
         });
 
         function showError(elementId, message) {
@@ -1086,10 +1125,15 @@
         // Load conversations
         async function loadConversations() {
             try {
-                const res = await fetch(`${API_BASE}/api/conversations?user_id=${currentUser.id}`, {
-                    credentials: 'include'
-                });
-                const convos = await res.json();
+                let convos = [];
+                try {
+                    const resp = await sendSheetRequest(`/api/conversations?user_id=${encodeURIComponent(currentUser.id)}`, 'GET', null);
+                    convos = resp && resp.response ? resp.response : [];
+                    if(!Array.isArray(convos)) convos = [];
+                } catch (err) {
+                    networkLog('Load conversations', err, { endpoint: `${API_BASE}/sheet/request` });
+                    // leave convos as empty
+                }
                 
                 // Separate direct messages and group chats
                 const directChats = convos.filter(c => !c.is_group);
@@ -1155,10 +1199,13 @@
                 const query = input.value.trim();
                 
                 try {
-                    const res = await fetch(`${API_BASE}/api/search_users?q=${encodeURIComponent(query)}&user_id=${currentUser.id}`, {
-                        credentials: 'include'
-                    });
-                    const users = await res.json();
+                    try {
+                        const resp = await sendSheetRequest(`/api/search_users?q=${encodeURIComponent(query)}&user_id=${encodeURIComponent(currentUser.id)}`, 'GET', null);
+                        var users = resp && resp.response ? resp.response : [];
+                    } catch (err) {
+                        networkLog('User search', err, { endpoint: `${API_BASE}/sheet/request` });
+                        return;
+                    }
                     
                     if (users.length) {
                         results.innerHTML = users.map(u => `
@@ -1192,19 +1239,18 @@
         // Start conversation
         async function startConversation(userId, displayName) {
             try {
-                const res = await fetch(`${API_BASE}/api/start_conversation`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ user_id: userId, current_user_id: currentUser.id })
-                });
-                const data = await res.json();
-                
-                document.getElementById('searchInput').value = '';
-                document.getElementById('searchResults').classList.remove('active');
-                
-                openConversation(data.conversation_id, displayName, userId);
-                loadConversations();
+                try {
+                    const resp = await sendSheetRequest('/api/start_conversation', 'POST', { user_id: userId, current_user_id: currentUser.id });
+                    const data = resp && resp.response ? resp.response : {};
+                    document.getElementById('searchInput').value = '';
+                    document.getElementById('searchResults').classList.remove('active');
+                    if (data.conversation_id) {
+                        openConversation(data.conversation_id, displayName, userId);
+                    }
+                    loadConversations();
+                } catch (err) {
+                    networkLog('Start conversation', err, { endpoint: `${API_BASE}/sheet/request` });
+                }
             } catch (err) {
                 networkLog('Start conversation', err, { endpoint: `${API_BASE}/api/start_conversation` });
             }
@@ -1226,11 +1272,8 @@
             socket.emit('join_conversation', { conversation_id: conversationId });
             
             try {
-                const res = await fetch(`${API_BASE}/api/messages/${conversationId}?user_id=${currentUser.id}`, {
-                    credentials: 'include'
-                });
-                const messages = await res.json();
-                
+                const resp = await sendSheetRequest(`/api/messages/${encodeURIComponent(conversationId)}?user_id=${encodeURIComponent(currentUser.id)}`, 'GET', null);
+                let messages = resp && resp.response ? resp.response : [];
                 const list = document.getElementById('messagesList');
                 list.innerHTML = messages.map(m => `
                     <div class="message ${m.sender_id === currentUser.id ? 'sent' : 'received'}">
@@ -1241,7 +1284,7 @@
                 `).join('');
                 list.scrollTop = list.scrollHeight;
             } catch (err) {
-                networkLog('Load messages', err, { endpoint: `${API_BASE}/api/messages/${conversationId}` });
+                networkLog('Load messages', err, { endpoint: `${API_BASE}/sheet/request` });
             }
             
             loadConversations();
@@ -1278,12 +1321,12 @@
             
             if (!content || !currentConversationId) return;
             
-            socket.emit('send_message', {
-                conversation_id: currentConversationId,
-                content: content,
-                sender_id: currentUser.id
-            });
-            
+            try {
+                // Route message send through sheet -> server will create message and emit
+                sendSheetRequest('/api/send_message', 'POST', { conversation_id: currentConversationId, content: content, sender_id: currentUser.id }).catch(err=>{ networkLog('Send message', err); });
+            } catch(e) {
+                networkLog('Send message', e);
+            }
             input.value = '';
         }
 
@@ -1363,10 +1406,8 @@
                 }
                 
                 try {
-                    const res = await fetch(`${API_BASE}/api/search_users?q=${encodeURIComponent(query)}&user_id=${currentUser.id}`, {
-                        credentials: 'include'
-                    });
-                    const users = await res.json();
+                    const resp = await sendSheetRequest(`/api/search_users?q=${encodeURIComponent(query)}&user_id=${encodeURIComponent(currentUser.id)}`, 'GET', null);
+                    const users = resp && resp.response ? resp.response : [];
                     
                     // Filter out already selected members
                     const filtered = users.filter(u => !selectedGroupMembers.find(m => m.id === u.id));
@@ -1386,7 +1427,7 @@
                     }
                     results.classList.add('active');
                 } catch (err) {
-                    networkLog('Group member search', err, { endpoint: `${API_BASE}/api/search_users?q=${encodeURIComponent(query)}` });
+                    networkLog('Group member search', err, { endpoint: `${API_BASE}/sheet/request` });
                 }
             });
         }
@@ -1408,21 +1449,16 @@
             document.getElementById('createGroupBtn').textContent = 'Creating...';
             
             try {
-                const res = await fetch(`${API_BASE}/api/create_group`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({
-                        current_user_id: currentUser.id,
-                        group_name: groupName,
-                        member_ids: selectedGroupMembers.map(m => m.id)
-                    })
+                const resp = await sendSheetRequest('/api/create_group', 'POST', {
+                    current_user_id: currentUser.id,
+                    group_name: groupName,
+                    member_ids: selectedGroupMembers.map(m => m.id)
                 });
-                const data = await res.json();
-                
+                const data = resp && resp.response ? resp.response : {};
+
                 document.getElementById('createGroupBtn').disabled = false;
                 document.getElementById('createGroupBtn').textContent = 'Create Group';
-                
+
                 if (data.success) {
                     closeGroupModal();
                     loadConversations();
@@ -1431,7 +1467,7 @@
                     showError('groupError', data.error || 'Failed to create group');
                 }
             } catch (err) {
-                networkLog('Create group', err, { endpoint: `${API_BASE}/api/create_group`, groupName });
+                networkLog('Create group', err, { endpoint: `${API_BASE}/sheet/request`, groupName });
                 document.getElementById('createGroupBtn').disabled = false;
                 document.getElementById('createGroupBtn').textContent = 'Create Group';
                 showError('groupError', 'Connection error. Please try again.');
@@ -1452,10 +1488,8 @@
             socket.emit('join_conversation', { conversation_id: conversationId });
             
             try {
-                const res = await fetch(`${API_BASE}/api/messages/${conversationId}?user_id=${currentUser.id}`, {
-                    credentials: 'include'
-                });
-                const messages = await res.json();
+                const resp = await sendSheetRequest(`/api/messages/${encodeURIComponent(conversationId)}?user_id=${encodeURIComponent(currentUser.id)}`, 'GET', null);
+                let messages = resp && resp.response ? resp.response : [];
                 
                 const list = document.getElementById('messagesList');
                 list.innerHTML = messages.map(m => `
@@ -1467,7 +1501,7 @@
                 `).join('');
                 list.scrollTop = list.scrollHeight;
             } catch (err) {
-                networkLog('Load messages', err, { endpoint: `${API_BASE}/api/messages/${conversationId}` });
+                networkLog('Load messages', err, { endpoint: `${API_BASE}/sheet/request` });
             }
             
             loadConversations();
@@ -1542,6 +1576,64 @@
         console.info = function(){ try { orig.info.apply(console, arguments); } catch(e){}; appendLine('INFO', arguments); };
         console.warn = function(){ try { orig.warn.apply(console, arguments); } catch(e){}; appendLine('WARN', arguments); };
         console.error = function(){ try { orig.error.apply(console, arguments); } catch(e){}; appendLine('ERROR', arguments); };
+
+        // --- Network logging: fetch ---
+        try {
+            const origFetch = window.fetch.bind(window);
+            window.fetch = async function(input, init){
+                try {
+                    const method = (init && init.method) || (typeof input === 'string' ? 'GET' : (input && input.method) || 'GET');
+                    const url = (typeof input === 'string') ? input : (input && input.url) || '';
+                    appendLine('NET-REQ', [method, url, init && init.body ? (typeof init.body === 'string' ? init.body.slice(0,1000) : JSON.stringify(init.body).slice(0,1000)) : '']);
+                    const start = Date.now();
+                    const res = await origFetch(input, init);
+                    // clone so we can read body without consuming original
+                    let bodyText = '';
+                    try {
+                        const clone = res.clone();
+                        bodyText = await clone.text();
+                        if(bodyText && bodyText.length > 1000) bodyText = bodyText.slice(0,1000) + '...';
+                    } catch(e) { bodyText = '[unavailable]'; }
+                    appendLine('NET-RES', [method, url, res.status, `${Date.now()-start}ms`, bodyText]);
+                    return res;
+                } catch (err) {
+                    appendLine('NET-ERR', [String(err)]);
+                    throw err;
+                }
+            };
+        } catch (e) {
+            // ignore
+        }
+
+        // --- Network logging: XMLHttpRequest ---
+        try {
+            const XHRProto = XMLHttpRequest && XMLHttpRequest.prototype;
+            if (XHRProto) {
+                const _open = XHRProto.open;
+                const _send = XHRProto.send;
+                XHRProto.open = function(method, url) {
+                    this.__method = method;
+                    this.__url = url;
+                    return _open.apply(this, arguments);
+                };
+                XHRProto.send = function(body) {
+                    try {
+                        appendLine('NET-REQ', [this.__method, this.__url, body ? (typeof body === 'string' ? body.slice(0,1000) : JSON.stringify(body).slice(0,1000)) : '']);
+                    } catch(e) {}
+                    this.addEventListener('load', function(){
+                        try {
+                            let resp = this.responseText || '';
+                            if(resp.length > 1000) resp = resp.slice(0,1000) + '...';
+                            appendLine('NET-RES', [this.__method, this.__url, this.status, resp]);
+                        } catch(e) {}
+                    });
+                    this.addEventListener('error', function(e){
+                        appendLine('NET-ERR', [this.__method, this.__url, String(e)]);
+                    });
+                    return _send.apply(this, arguments);
+                };
+            }
+        } catch (e) {}
 
         btn.addEventListener('click', ()=>{
             if(panel.style.display === 'none' || panel.style.display === '') panel.style.display = 'block';

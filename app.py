@@ -11,6 +11,7 @@ import os
 import sys
 import secrets
 import threading
+import uuid
 import time
 
 app = Flask(__name__)
@@ -136,11 +137,13 @@ def poll_sheet_loop():
             # process new rows (indices are 0-based; spreadsheet rows start at 1)
             for idx in range(last_row, len(all_values)):
                 row = all_values[idx]
-                # expected at least 5 columns
-                if len(row) < 5:
+                # expected at least 1 column
+                if len(row) < 1:
                     continue
                 action = row[0]
-                if action == 'send_message':
+
+                # Handle simple send_message rows (legacy)
+                if action == 'send_message' and len(row) >= 5:
                     conversation_id = row[1]
                     sender_id = row[2]
                     sender_name = row[3]
@@ -168,6 +171,62 @@ def poll_sheet_loop():
                     except Exception as e:
                         print(f'Failed to emit new_message from sheet: {e}')
 
+                # Handle generic request rows
+                elif action == 'request' and len(row) >= 6:
+                    # columns: action, request_id, client_id, method, path, payload_json, created_at(optional)
+                    request_id = row[1]
+                    client_id = row[2]
+                    method = row[3]
+                    path = row[4]
+                    payload_json = row[5] if len(row) > 5 else ''
+
+                    # Dispatch internally using Flask test client to reuse existing endpoints
+                    try:
+                        with app.test_client() as c:
+                            # Choose method
+                            if method.upper() == 'GET':
+                                rv = c.get(path)
+                            else:
+                                # assume JSON body
+                                try:
+                                    import json as _json
+                                    body = _json.loads(payload_json) if payload_json else None
+                                except Exception:
+                                    body = None
+                                rv = c.open(path, method=method.upper(), json=body)
+
+                            # Try to parse JSON response
+                            try:
+                                resp_data = rv.get_json(force=True)
+                            except Exception:
+                                resp_data = {'text': rv.get_data(as_text=True)}
+
+                            status_code = rv.status_code
+
+                            # store response in Mongo for clients to poll
+                            resp_doc = {
+                                'request_id': request_id,
+                                'client_id': client_id,
+                                'status': status_code,
+                                'response': resp_data,
+                                'created_at': datetime.now(UTC)
+                            }
+                            db.sheets_responses.insert_one(resp_doc)
+
+                            # append a response row to the sheet for external consumers
+                            try:
+                                resp_json = ''
+                                import json as _json
+                                try:
+                                    resp_json = _json.dumps(resp_data)
+                                except Exception:
+                                    resp_json = str(resp_data)
+                                sheets_sheet.append_row(['response', request_id, client_id, str(status_code), resp_json, datetime.now(UTC).isoformat()], value_input_option='RAW')
+                            except Exception as e:
+                                print(f'Failed to append response row to sheet: {e}')
+                    except Exception as e:
+                        print(f'Failed to dispatch sheet request {request_id}: {e}')
+
                 # update last_row (sheet rows are 1-indexed)
                 last_row = idx + 1
                 meta.update_one({'_id': 'last_row'}, {'$set': {'value': last_row}}, upsert=True)
@@ -185,6 +244,55 @@ try:
         t.start()
 except Exception:
     pass
+
+
+# Endpoint for standalone clients to write a request row to the sheet
+@app.route('/sheet/request', methods=['POST'])
+def sheet_request():
+    data = request.get_json() or {}
+    request_path = data.get('request_path') or data.get('path')
+    method = (data.get('method') or 'POST').upper()
+    payload = data.get('payload')
+    client_id = data.get('client_id') or data.get('client') or str(uuid.uuid4())
+    request_id = data.get('request_id') or str(uuid.uuid4())
+
+    if not SHEETS_ENABLED or not sheets_sheet:
+        return jsonify({'success': False, 'error': 'Sheets tunneling not enabled'}), 503
+
+    try:
+        import json as _json
+        payload_json = _json.dumps(payload) if payload is not None else ''
+        created_at = datetime.now(UTC).isoformat()
+        # append row: action, request_id, client_id, method, path, payload_json, created_at
+        sheets_sheet.append_row(['request', request_id, client_id, method, request_path, payload_json, created_at], value_input_option='RAW')
+        return jsonify({'success': True, 'request_id': request_id})
+    except Exception as e:
+        print(f'Failed to append request to sheet: {e}')
+        return jsonify({'success': False, 'error': 'Failed to write to sheet'}), 500
+
+
+@app.route('/sheet/response')
+def sheet_response():
+    # Query stored responses from Mongo (populated by poll loop)
+    client_id = request.args.get('client_id')
+    request_id = request.args.get('request_id')
+
+    if not client_id and not request_id:
+        return jsonify({'success': False, 'error': 'client_id or request_id required'}), 400
+
+    q = {}
+    if client_id:
+        q['client_id'] = client_id
+    if request_id:
+        q['request_id'] = request_id
+
+    docs = list(db.sheets_responses.find(q).sort('created_at', 1).limit(50))
+    for d in docs:
+        d['_id'] = str(d['_id'])
+        if isinstance(d.get('created_at'), datetime):
+            d['created_at'] = d['created_at'].isoformat()
+
+    return jsonify({'success': True, 'responses': docs})
 
 # ------------------ end Google Sheets tunneling ------------------
 
@@ -948,6 +1056,80 @@ def handle_message(data):
         emit('conversation_updated', {
             'conversation_id': conversation_id
         }, room=other_id)
+
+
+@app.route('/api/send_message', methods=['POST'])
+def api_send_message():
+    """HTTP endpoint to send a message (used by sheet-based requests)."""
+    data = request.get_json() or {}
+    user_id = data.get('sender_id') or session.get('user_id')
+    if not user_id:
+        return jsonify({'success': False, 'error': 'Not authenticated'}), 401
+
+    conversation_id = data.get('conversation_id')
+    content = (data.get('content') or '').strip()
+
+    if not conversation_id or not content:
+        return jsonify({'success': False, 'error': 'Conversation and content required'}), 400
+
+    # Verify user is in conversation
+    convo = conversations.find_one({
+        '_id': ObjectId(conversation_id),
+        'participants': user_id
+    })
+
+    if not convo:
+        return jsonify({'success': False, 'error': 'Conversation not found'}), 404
+
+    # Save message
+    message = {
+        'conversation_id': conversation_id,
+        'sender_id': user_id,
+        'content': content,
+        'created_at': datetime.now(UTC)
+    }
+    result = messages.insert_one(message)
+
+    # Update conversation - increment unread for all other participants
+    other_ids = [p for p in convo['participants'] if p != user_id]
+    update_inc = {f'unread_{oid}': 1 for oid in other_ids}
+
+    conversations.update_one(
+        {'_id': ObjectId(conversation_id)},
+        {
+            '$set': {
+                'last_message': content[:50],
+                'last_message_at': datetime.now(UTC)
+            },
+            '$inc': update_inc
+        }
+    )
+
+    # Broadcast message to conversation room
+    sender_name = session.get('display_name')
+    if not sender_name:
+        sender_user = users.find_one({'_id': ObjectId(user_id)})
+        sender_name = sender_user['display_name'] if sender_user else 'Unknown'
+
+    try:
+        socketio.emit('new_message', {
+            'id': str(result.inserted_id),
+            'conversation_id': conversation_id,
+            'sender_id': user_id,
+            'sender_name': sender_name,
+            'content': content,
+            'created_at': datetime.now(UTC).isoformat()
+        }, room=conversation_id)
+    except Exception:
+        pass
+
+    for other_id in other_ids:
+        try:
+            socketio.emit('conversation_updated', {'conversation_id': conversation_id}, room=other_id)
+        except Exception:
+            pass
+
+    return jsonify({'success': True, 'message_id': str(result.inserted_id)})
 
 @socketio.on('typing')
 def handle_typing(data):
